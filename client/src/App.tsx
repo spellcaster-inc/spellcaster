@@ -6,14 +6,20 @@ import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
-import { SERVER_URL } from './lib/config';
 import type { GameSettings } from '../../shared/types/socket';
+import { SERVER_URL } from './lib/config';
+import spellAudioManifest from '../../shared/spellAudioManifest.json';
 
 const DEFAULT_SETTINGS: GameSettings = {
   difficulty: 'medium',
   rounds: 5,
   readingSpeed: 1,
 };
+
+type SpellAudioTier = 'easy' | 'medium' | 'hard';
+type SpellAudioManifest = Record<SpellAudioTier, Array<{ spell: string; file: string }>>;
+const SPELL_AUDIO_MANIFEST = spellAudioManifest as SpellAudioManifest;
+const SPELL_AUDIO_TIERS: SpellAudioTier[] = ['easy', 'medium', 'hard'];
 
 const App: React.FC = () => {
   const { status } = useSocketConnection();
@@ -49,11 +55,6 @@ const App: React.FC = () => {
   const promptIdRef = useRef<string | null>(null);
   const promptReadyRef = useRef<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
-  const pendingAudioRef = useRef<{ roundNumber: number; url: string; readingSpeed: number } | null>(
-    null
-  );
-  const audioFetchControllerRef = useRef<AbortController | null>(null);
   const victorySfxRef = useRef<HTMLAudioElement | null>(null);
   const lossSfxRef = useRef<HTMLAudioElement | null>(null);
   const browserSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -68,6 +69,33 @@ const App: React.FC = () => {
     }
     return false;
   }, [duel, lobby]);
+  const spellAudioLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    SPELL_AUDIO_TIERS.forEach((tier) => {
+      SPELL_AUDIO_MANIFEST[tier].forEach(({ spell, file }) => {
+        lookup.set(spell.trim().toUpperCase(), file);
+      });
+    });
+    return lookup;
+  }, []);
+
+  const resolveSpellAudioUrl = useCallback(
+    (spellText: string) => {
+      if (!spellText) {
+        return null;
+      }
+      const raw = spellAudioLookup.get(spellText.trim().toUpperCase());
+      if (!raw) {
+        return null;
+      }
+      // If the URL is relative (starts with /audio/...), prefix with the server origin
+      if (raw.startsWith('/')) {
+        return `${SERVER_URL}${raw}`;
+      }
+      return raw;
+    },
+    [spellAudioLookup]
+  );
 
   const handleLandingHostGame = (nickname: string, wizardId: string) => {
     const safeName =  nickname.trim() || 'WIZARD';
@@ -98,10 +126,6 @@ const App: React.FC = () => {
       audioRef.current.pause();
       audioRef.current.src = '';
       audioRef.current = null;
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
     }
   }, []);
   const stopBrowserSpeech = useCallback(() => {
@@ -171,12 +195,6 @@ const App: React.FC = () => {
     }
   }, [summary, localPlayer, playVictorySfx, playLossSfx]);
 
-  const cleanupPendingAudio = useCallback(() => {
-    if (pendingAudioRef.current) {
-      URL.revokeObjectURL(pendingAudioRef.current.url);
-      pendingAudioRef.current = null;
-    }
-  }, []);
   const speakWithBrowserTts = useCallback(
     (text: string, readingSpeed: number) => {
       if (!text) {
@@ -206,12 +224,7 @@ const App: React.FC = () => {
       cleanupAudio();
       const audio = new Audio(url);
       audioRef.current = audio;
-      audioUrlRef.current = url;
       audio.onended = () => {
-        if (audioUrlRef.current === url) {
-          URL.revokeObjectURL(url);
-          audioUrlRef.current = null;
-        }
         if (audioRef.current === audio) {
           audioRef.current = null;
         }
@@ -225,67 +238,6 @@ const App: React.FC = () => {
     [cleanupAudio]
   );
 
-  const preloadSpellAudio = useCallback(
-    async (roundNumber: number, text: string, readingSpeed: number) => {
-      if (!text || !roundNumber) {
-        return;
-      }
-
-      if (shouldUseBrowserTts) {
-        audioFetchControllerRef.current?.abort();
-        cleanupPendingAudio();
-        return;
-      }
-
-      if (
-        pendingAudioRef.current?.roundNumber === roundNumber &&
-        pendingAudioRef.current.readingSpeed === readingSpeed
-      ) {
-        return;
-      }
-
-      audioFetchControllerRef.current?.abort();
-      audioFetchControllerRef.current = new AbortController();
-
-      try {
-        const response = await fetch(`${SERVER_URL}/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text,
-            readingSpeed,
-          }),
-          signal: audioFetchControllerRef.current.signal,
-        });
-
-        if (!response.ok) {
-          console.error('failed to preload spell audio', await response.text());
-          return;
-        }
-
-        const blob = await response.blob();
-        cleanupPendingAudio();
-        const url = URL.createObjectURL(blob);
-        pendingAudioRef.current = { roundNumber, url, readingSpeed };
-      } catch (error) {
-        if (audioFetchControllerRef.current?.signal.aborted) {
-          return;
-        }
-        console.error('spell audio preload failed', error);
-      }
-    },
-    [cleanupPendingAudio, shouldUseBrowserTts]
-  );
-
-  useEffect(() => {
-    if (!countdown?.spellText) {
-      return;
-    }
-    preloadSpellAudio(countdown.roundNumber, countdown.spellText, countdown.readingSpeed);
-  }, [countdown, preloadSpellAudio]);
-
   useEffect(() => {
     if (!prompt) {
       setCurrentGuess('');
@@ -293,7 +245,6 @@ const App: React.FC = () => {
       setHasSubmitted(false);
       promptReadyRef.current = false;
       cleanupAudio();
-      cleanupPendingAudio();
       stopBrowserSpeech();
       return;
     }
@@ -335,7 +286,7 @@ const App: React.FC = () => {
         }
       }, 200);
     });
-  }, [prompt, cleanupAudio, cleanupPendingAudio, stopBrowserSpeech]);
+  }, [prompt, cleanupAudio, stopBrowserSpeech]);
 
   useEffect(() => {
     if (!prompt) {
@@ -344,43 +295,33 @@ const App: React.FC = () => {
       return;
     }
 
-    let cancelled = false;
-
     if (shouldUseBrowserTts) {
       speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
       return () => {
-        cancelled = true;
         stopBrowserSpeech();
       };
     }
 
-    const ensureAudio = async () => {
-      if (
-        !pendingAudioRef.current ||
-        pendingAudioRef.current.roundNumber !== prompt.roundNumber ||
-        pendingAudioRef.current.readingSpeed !== prompt.readingSpeed
-      ) {
-        await preloadSpellAudio(prompt.roundNumber, prompt.spellText, prompt.readingSpeed);
-      }
+    const audioUrl = resolveSpellAudioUrl(prompt.spellText);
+
+    if (!audioUrl) {
+      console.warn('No saved audio for spell, using browser voice instead.');
+      speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
+      return () => {
+        stopBrowserSpeech();
+      };
+    }
+
+    let cancelled = false;
+
+    const play = async () => {
       if (cancelled) {
         return;
       }
-
-      const cached = pendingAudioRef.current;
-      if (
-        !cached ||
-        cached.roundNumber !== prompt.roundNumber ||
-        cached.readingSpeed !== prompt.readingSpeed
-      ) {
-        console.warn('spell audio not ready in time, skipping playback');
-        return;
-      }
-
-      pendingAudioRef.current = null;
-      await playAudioFromUrl(cached.url);
+      await playAudioFromUrl(audioUrl);
     };
 
-    ensureAudio();
+    play();
 
     return () => {
       cancelled = true;
@@ -388,7 +329,7 @@ const App: React.FC = () => {
     };
   }, [
     prompt,
-    preloadSpellAudio,
+    resolveSpellAudioUrl,
     playAudioFromUrl,
     cleanupAudio,
     shouldUseBrowserTts,
@@ -398,12 +339,10 @@ const App: React.FC = () => {
 
   useEffect(
     () => () => {
-      audioFetchControllerRef.current?.abort();
-      cleanupPendingAudio();
       cleanupAudio();
       stopBrowserSpeech();
     },
-    [cleanupAudio, cleanupPendingAudio, stopBrowserSpeech]
+    [cleanupAudio, stopBrowserSpeech]
   );
 
   useEffect(() => {
