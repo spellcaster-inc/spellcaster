@@ -158,6 +158,7 @@ export function useLobby(): UseLobbyResult {
     };
 
     const handleError = (payload: ServerErrorPayload) => {
+      console.error('[socket error]', payload.message);
       setError(payload.message);
     };
 
