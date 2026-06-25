@@ -84,9 +84,9 @@ export function useLobby(): UseLobbyResult {
       setDuel((prev) =>
         prev
           ? {
-              ...prev,
-              round: payload.roundNumber,
-            }
+            ...prev,
+            round: payload.roundNumber,
+          }
           : prev
       );
     };
@@ -99,16 +99,16 @@ export function useLobby(): UseLobbyResult {
         prev && prev.roundNumber === payload.roundNumber
           ? prev
           : {
-              roundNumber: payload.roundNumber,
-              playerIds: {},
-            }
+            roundNumber: payload.roundNumber,
+            playerIds: {},
+          }
       );
       setDuel((prev) =>
         prev
           ? {
-              ...prev,
-              round: payload.roundNumber,
-            }
+            ...prev,
+            round: payload.roundNumber,
+          }
           : prev
       );
     };
@@ -131,15 +131,18 @@ export function useLobby(): UseLobbyResult {
           return acc;
         }, {}),
       });
-      setDuel((prev) =>
-        prev
+      setDuel((prev) => {
+        const updated = prev
           ? {
-              ...prev,
-              beamOffset: payload.beamOffset,
-              round: payload.roundNumber,
-            }
-          : prev
-      );
+            ...prev,
+            beamOffset: payload.beamOffset,
+            round: payload.roundNumber,
+          }
+          : prev;
+        console.log('📊 beamOffset from server:', payload.beamOffset, 'scores:', payload.playerResults.map(p => p.totalScore));
+        console.log('🎯 duel.beamOffset after update:', updated?.beamOffset);
+        return updated;
+      });
     };
 
     const handleCompleted = (payload: GameSummary) => {
@@ -158,6 +161,7 @@ export function useLobby(): UseLobbyResult {
     };
 
     const handleError = (payload: ServerErrorPayload) => {
+      console.error('[socket error]', payload.message);
       setError(payload.message);
     };
 

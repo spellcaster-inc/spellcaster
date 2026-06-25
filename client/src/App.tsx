@@ -6,14 +6,20 @@ import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
-import { SERVER_URL } from './lib/config';
 import type { GameSettings } from '../../shared/types/socket';
+import { SERVER_URL } from './lib/config';
+import spellAudioManifest from '../../shared/spellAudioManifest.json';
 
 const DEFAULT_SETTINGS: GameSettings = {
   difficulty: 'medium',
   rounds: 5,
   readingSpeed: 1,
 };
+
+type SpellAudioTier = 'easy' | 'medium' | 'hard';
+type SpellAudioManifest = Record<SpellAudioTier, Array<{ spell: string; file: string }>>;
+const SPELL_AUDIO_MANIFEST = spellAudioManifest as SpellAudioManifest;
+const SPELL_AUDIO_TIERS: SpellAudioTier[] = ['easy', 'medium', 'hard'];
 
 const App: React.FC = () => {
   const { status } = useSocketConnection();
@@ -42,18 +48,20 @@ const App: React.FC = () => {
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [currentScreen, setCurrentScreen] = useState<'landing' | 'game'>('landing');
   const [currentGuess, setCurrentGuess] = useState('');
+  const currentGuessRef = useRef('');
   const [typingStartedAt, setTypingStartedAt] = useState<number | null>(null);
+
+  // Sync setter that updates both ref (synchronous) and state (async)
+  const setGuess = useCallback((next: string) => {
+    currentGuessRef.current = next;
+    setCurrentGuess(next);
+  }, []);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const promptIdRef = useRef<string | null>(null);
   const promptReadyRef = useRef<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
-  const pendingAudioRef = useRef<{ roundNumber: number; url: string; readingSpeed: number } | null>(
-    null
-  );
-  const audioFetchControllerRef = useRef<AbortController | null>(null);
   const victorySfxRef = useRef<HTMLAudioElement | null>(null);
   const lossSfxRef = useRef<HTMLAudioElement | null>(null);
   const browserSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -68,6 +76,33 @@ const App: React.FC = () => {
     }
     return false;
   }, [duel, lobby]);
+  const spellAudioLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    SPELL_AUDIO_TIERS.forEach((tier) => {
+      SPELL_AUDIO_MANIFEST[tier].forEach(({ spell, file }) => {
+        lookup.set(spell.trim().toUpperCase(), file);
+      });
+    });
+    return lookup;
+  }, []);
+
+  const resolveSpellAudioUrl = useCallback(
+    (spellText: string) => {
+      if (!spellText) {
+        return null;
+      }
+      const raw = spellAudioLookup.get(spellText.trim().toUpperCase());
+      if (!raw) {
+        return null;
+      }
+      // If the URL is relative (starts with /audio/...), prefix with the server origin
+      if (raw.startsWith('/')) {
+        return `${SERVER_URL}${raw}`;
+      }
+      return raw;
+    },
+    [spellAudioLookup]
+  );
 
   const handleLandingHostGame = (nickname: string, wizardId: string) => {
     const safeName =  nickname.trim() || 'WIZARD';
@@ -98,10 +133,6 @@ const App: React.FC = () => {
       audioRef.current.pause();
       audioRef.current.src = '';
       audioRef.current = null;
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
     }
   }, []);
   const stopBrowserSpeech = useCallback(() => {
@@ -160,10 +191,20 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [countdown]);
 
+  // Track which game summary we've played sounds for to avoid repeats
+  const playedSummaryRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!summary || !localPlayer) {
       return;
     }
+    // Only play once per unique game (identified by roomCode + round count)
+    const summaryKey = `${summary.roomCode}-${summary.rounds.length}`;
+    if (playedSummaryRef.current === summaryKey) {
+      return; // Already played for this game
+    }
+    playedSummaryRef.current = summaryKey;
+
     if (summary.winnerId === localPlayer.id) {
       playVictorySfx();
     } else {
@@ -171,12 +212,6 @@ const App: React.FC = () => {
     }
   }, [summary, localPlayer, playVictorySfx, playLossSfx]);
 
-  const cleanupPendingAudio = useCallback(() => {
-    if (pendingAudioRef.current) {
-      URL.revokeObjectURL(pendingAudioRef.current.url);
-      pendingAudioRef.current = null;
-    }
-  }, []);
   const speakWithBrowserTts = useCallback(
     (text: string, readingSpeed: number) => {
       if (!text) {
@@ -206,12 +241,7 @@ const App: React.FC = () => {
       cleanupAudio();
       const audio = new Audio(url);
       audioRef.current = audio;
-      audioUrlRef.current = url;
       audio.onended = () => {
-        if (audioUrlRef.current === url) {
-          URL.revokeObjectURL(url);
-          audioUrlRef.current = null;
-        }
         if (audioRef.current === audio) {
           audioRef.current = null;
         }
@@ -225,117 +255,50 @@ const App: React.FC = () => {
     [cleanupAudio]
   );
 
-  const preloadSpellAudio = useCallback(
-    async (roundNumber: number, text: string, readingSpeed: number) => {
-      if (!text || !roundNumber) {
-        return;
-      }
-
-      if (shouldUseBrowserTts) {
-        audioFetchControllerRef.current?.abort();
-        cleanupPendingAudio();
-        return;
-      }
-
-      if (
-        pendingAudioRef.current?.roundNumber === roundNumber &&
-        pendingAudioRef.current.readingSpeed === readingSpeed
-      ) {
-        return;
-      }
-
-      audioFetchControllerRef.current?.abort();
-      audioFetchControllerRef.current = new AbortController();
-
-      try {
-        const response = await fetch(`${SERVER_URL}/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text,
-            readingSpeed,
-          }),
-          signal: audioFetchControllerRef.current.signal,
-        });
-
-        if (!response.ok) {
-          console.error('failed to preload spell audio', await response.text());
-          return;
-        }
-
-        const blob = await response.blob();
-        cleanupPendingAudio();
-        const url = URL.createObjectURL(blob);
-        pendingAudioRef.current = { roundNumber, url, readingSpeed };
-      } catch (error) {
-        if (audioFetchControllerRef.current?.signal.aborted) {
-          return;
-        }
-        console.error('spell audio preload failed', error);
-      }
-    },
-    [cleanupPendingAudio, shouldUseBrowserTts]
-  );
-
-  useEffect(() => {
-    if (!countdown?.spellText) {
-      return;
-    }
-    preloadSpellAudio(countdown.roundNumber, countdown.spellText, countdown.readingSpeed);
-  }, [countdown, preloadSpellAudio]);
-
   useEffect(() => {
     if (!prompt) {
-      setCurrentGuess('');
+      setGuess('');
       setTypingStartedAt(null);
       setHasSubmitted(false);
       promptReadyRef.current = false;
       cleanupAudio();
-      cleanupPendingAudio();
       stopBrowserSpeech();
       return;
     }
-    
-    // Only reset guess if it's a new prompt (different promptId)
-    // This prevents resetting the guess if the prompt object is recreated but is the same prompt
+
     const isNewPrompt = promptIdRef.current !== prompt.promptId;
-    
+
     if (isNewPrompt) {
-      setCurrentGuess('');
+      setGuess('');
       setHasSubmitted(false);
-      promptReadyRef.current = false; // Mark as not ready until initialization is complete
       setTypingStartedAt(performance.now());
       promptIdRef.current = prompt.promptId;
     }
-    
-    // More robust focus mechanism with multiple attempts
-    const focusInput = () => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        // Try again after a short delay to ensure focus
-        setTimeout(() => {
-          if (inputRef.current && document.activeElement !== inputRef.current) {
-            inputRef.current.focus();
-          }
-        }, 100);
+
+    // Focus the input and immediately mark as ready (no waiting loops).
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+    promptReadyRef.current = true;
+
+    // If the player tabs away and comes back, resync from DOM and force focus.
+    const handleWindowFocus = () => {
+      const el = inputRef.current;
+      if (!el) return;
+
+      // If DOM has text but ref is empty or different, resync.
+      const dom = (el.value ?? '').toUpperCase();
+      if (dom && dom !== currentGuessRef.current) {
+        setGuess(dom);
       }
+
+      el.focus();
     };
-    
-    // Use requestAnimationFrame for initial focus, then setTimeout as backup
-    requestAnimationFrame(() => {
-      focusInput();
-      
-      // Mark prompt as ready after a small delay to ensure everything is initialized
-      // This prevents race conditions where Enter is pressed before the prompt is fully ready
-      setTimeout(() => {
-        if (promptIdRef.current === prompt.promptId && inputRef.current) {
-          promptReadyRef.current = true;
-        }
-      }, 200);
-    });
-  }, [prompt, cleanupAudio, cleanupPendingAudio, stopBrowserSpeech]);
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [prompt, cleanupAudio, stopBrowserSpeech, setGuess]);
 
   useEffect(() => {
     if (!prompt) {
@@ -344,43 +307,33 @@ const App: React.FC = () => {
       return;
     }
 
-    let cancelled = false;
-
     if (shouldUseBrowserTts) {
       speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
       return () => {
-        cancelled = true;
         stopBrowserSpeech();
       };
     }
 
-    const ensureAudio = async () => {
-      if (
-        !pendingAudioRef.current ||
-        pendingAudioRef.current.roundNumber !== prompt.roundNumber ||
-        pendingAudioRef.current.readingSpeed !== prompt.readingSpeed
-      ) {
-        await preloadSpellAudio(prompt.roundNumber, prompt.spellText, prompt.readingSpeed);
-      }
+    const audioUrl = resolveSpellAudioUrl(prompt.spellText);
+
+    if (!audioUrl) {
+      console.warn('No saved audio for spell, using browser voice instead.');
+      speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
+      return () => {
+        stopBrowserSpeech();
+      };
+    }
+
+    let cancelled = false;
+
+    const play = async () => {
       if (cancelled) {
         return;
       }
-
-      const cached = pendingAudioRef.current;
-      if (
-        !cached ||
-        cached.roundNumber !== prompt.roundNumber ||
-        cached.readingSpeed !== prompt.readingSpeed
-      ) {
-        console.warn('spell audio not ready in time, skipping playback');
-        return;
-      }
-
-      pendingAudioRef.current = null;
-      await playAudioFromUrl(cached.url);
+      await playAudioFromUrl(audioUrl);
     };
 
-    ensureAudio();
+    play();
 
     return () => {
       cancelled = true;
@@ -388,7 +341,7 @@ const App: React.FC = () => {
     };
   }, [
     prompt,
-    preloadSpellAudio,
+    resolveSpellAudioUrl,
     playAudioFromUrl,
     cleanupAudio,
     shouldUseBrowserTts,
@@ -398,12 +351,10 @@ const App: React.FC = () => {
 
   useEffect(
     () => () => {
-      audioFetchControllerRef.current?.abort();
-      cleanupPendingAudio();
       cleanupAudio();
       stopBrowserSpeech();
     },
-    [cleanupAudio, cleanupPendingAudio, stopBrowserSpeech]
+    [cleanupAudio, stopBrowserSpeech]
   );
 
   useEffect(() => {
@@ -454,92 +405,78 @@ const App: React.FC = () => {
   };
 
   const handleGuessChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentGuess(event.target.value.toUpperCase());
+    setGuess(event.target.value.toUpperCase());
   };
 
   const handleSubmitSpell = useCallback(() => {
-    if (!prompt || hasSubmitted) {
+    if (!prompt || hasSubmitted || !prompt.promptId) {
       return;
     }
-    if (!prompt.promptId) {
-      return;
-    }
-    
-    // Ensure prompt is ready before allowing submission
-    // This prevents race conditions where Enter is pressed before the prompt is fully initialized
-    if (!promptReadyRef.current) {
-      // If prompt isn't ready yet, wait a bit and check again
-      // This handles the case where Enter is pressed immediately after prompt appears
-      const checkReady = () => {
-        // Check current state using refs to avoid closure issues
-        if (promptReadyRef.current && promptIdRef.current === prompt.promptId && !hasSubmitted && prompt) {
-          // Retry submission now that prompt is ready
-          const inputValue = inputRef.current?.value || currentGuess;
-          const guessToSubmit = inputValue.trim().toUpperCase();
-          if (guessToSubmit) {
-            const duration = typingStartedAt ? Math.max(0, performance.now() - typingStartedAt) : 0;
-            submitSpell(guessToSubmit, duration, prompt.promptId);
-            setHasSubmitted(true);
-            playSpellCastSfx();
-          }
-        } else if (!promptReadyRef.current && promptIdRef.current === prompt.promptId && prompt) {
-          // Still not ready, check again in a bit (max 10 attempts = 500ms)
-          const attempts = (checkReady as any).attempts || 0;
-          if (attempts < 10) {
-            (checkReady as any).attempts = attempts + 1;
-            setTimeout(checkReady, 50);
-          }
-        }
-      };
-      (checkReady as any).attempts = 0;
-      setTimeout(checkReady, 50);
-      return;
-    }
-    
-    // Read the guess directly from the input element to avoid state sync issues
-    const inputValue = inputRef.current?.value || currentGuess;
-    const guessToSubmit = inputValue.trim().toUpperCase();
-    
-    // Don't submit if guess is empty (unless it's intentional)
+
+    // Read from both DOM and ref to handle race conditions after tab-in
+    const domValue = inputRef.current?.value ?? '';
+    const refValue = currentGuessRef.current ?? '';
+    const guessToSubmit = (domValue.trim() ? domValue : refValue).trim().toUpperCase();
+
     if (!guessToSubmit) {
+      if (inputRef.current && document.activeElement !== inputRef.current) {
+        inputRef.current.focus();
+      }
       return;
     }
-    
+
     const duration = typingStartedAt ? Math.max(0, performance.now() - typingStartedAt) : 0;
     submitSpell(guessToSubmit, duration, prompt.promptId);
     setHasSubmitted(true);
     playSpellCastSfx();
-  }, [prompt, hasSubmitted, currentGuess, typingStartedAt, submitSpell, playSpellCastSfx]);
+  }, [prompt, hasSubmitted, typingStartedAt, submitSpell, playSpellCastSfx]);
 
   const showResultsPending = hasSubmitted && !roundRecap && !prompt && !countdown;
 
-  // Global Enter key handler as fallback when input might not be focused
+  // Global keystroke handler - captures ALL keys when prompt is active
+  // This ensures typing works even if the hidden input loses focus
   useEffect(() => {
     if (!inDuel || !prompt || hasSubmitted) {
       return;
     }
 
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      // Only handle Enter key
-      if (event.key !== 'Enter') {
-        return;
-      }
-
-      // Don't interfere if user is typing in an input/textarea
       const target = event.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+      // If already typing in the spell input, let it handle normally
+      if (isInInput && target === inputRef.current) {
         return;
       }
 
-      // Focus the input, wait for it to be ready, then submit
-      if (inputRef.current) {
-        inputRef.current.focus();
-        // Give time for focus and any pending state updates
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            handleSubmitSpell();
-          }, 100);
-        });
+      // If typing in some other input (like a modal), ignore
+      if (isInInput) {
+        return;
+      }
+
+      // Handle Enter - submit
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleSubmitSpell();
+        return;
+      }
+
+      // Handle Backspace - remove last character
+      if (event.key === 'Backspace') {
+        event.preventDefault();
+        setGuess(currentGuessRef.current.slice(0, -1));
+        return;
+      }
+
+      // Handle character keys - add to guess
+      // key.length === 1 means it's a printable character (letter, number, space, etc.)
+      if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        setGuess(currentGuessRef.current + event.key.toUpperCase());
+        // Also focus the input for future keystrokes
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
       }
     };
 
@@ -547,7 +484,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown);
     };
-  }, [inDuel, prompt, hasSubmitted, handleSubmitSpell]);
+  }, [inDuel, prompt, hasSubmitted, handleSubmitSpell, setGuess]);
 
   const opponent = useMemo(() => {
     if (!duel || !localPlayer) {
@@ -645,13 +582,20 @@ const App: React.FC = () => {
           onGuessChange={handleGuessChange}
           onSubmitSpell={handleSubmitSpell}
           onKeyDown={(event) => {
+            if (!prompt) {
+              return;
+            }
+            // Ensure input is focused
+            if (inputRef.current && document.activeElement !== inputRef.current) {
+              inputRef.current.focus();
+            }
+            // Handle Enter: submit if not mid-composition
             if (event.key === 'Enter') {
+              // Skip if in IME composition mode
+              if (event.nativeEvent.isComposing) return;
               event.preventDefault();
               event.stopPropagation();
               handleSubmitSpell();
-            }
-            if (event.key === 'Backspace' || event.key === 'Delete') {
-              event.preventDefault();
             }
           }}
           inputRef={inputRef}

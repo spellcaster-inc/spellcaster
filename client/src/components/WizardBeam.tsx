@@ -136,6 +136,8 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
   }, [displayBeamOffset]);
 
   useEffect(() => {
+    console.log('🔮 WizardBeam received beamOffset prop:', beamOffset, 'current displayBeamOffset:', displayBeamOffset);
+    
     if (beamAnimationRef.current) {
       cancelAnimationFrame(beamAnimationRef.current);
     }
@@ -143,6 +145,8 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     const duration = 450;
     const start = currentOffsetRef.current;
     const delta = beamOffset - start;
+
+    console.log('🎬 Animation: start =', start, 'delta =', delta, 'target =', beamOffset);
 
     if (Math.abs(delta) < 0.01) {
       setDisplayBeamOffset(beamOffset);
@@ -256,7 +260,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
 
   // Calculate beam endpoints - both beams extend the same distance toward the center
   // This ensures both beams are equal length and meet in the middle
-  const calculateBeamEndpoints = (): { leftEnd: Point; rightEnd: Point } | null => {
+  const calculateBeamEndpoints = useCallback((): { leftEnd: Point; rightEnd: Point } | null => {
     if (!leftWandTip || !rightWandTip || !containerRef.current) {
       return null;
     }
@@ -270,7 +274,8 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     // Normalize beamOffset from [-100, 100] to adjust where beams meet
     // 0 = center, positive = right wins, negative = left wins
     const offsetPercent = displayBeamOffset / 100; // -1 to 1
-    const offsetDistance = (halfDistance * offsetPercent) * 0.3; // Scale down the offset for subtlety
+    // Increased from 0.3 to 3.0 for much more visible beam movement
+    const offsetDistance = (halfDistance * offsetPercent) * 3.0;
 
     // Both beams extend the same distance toward the center, with slight offset based on beamOffset
     // Left beam extends from left wand tip toward the center (to the right)
@@ -305,7 +310,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     }
 
     return { leftEnd, rightEnd };
-  };
+  }, [leftWandTip, rightWandTip, displayBeamOffset]);
 
   // Update positions on mount, resize, and when wizards change
   useEffect(() => {
