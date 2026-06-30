@@ -5,6 +5,7 @@ import GamePage from './pages/GamePage';
 import EntryPage from './pages/EntryPage';
 import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
+import { useCountdownTimer } from './hooks/useCountdownTimer';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
 import type { GameSettings } from '../../shared/types/socket';
@@ -52,7 +53,7 @@ const App: React.FC = () => {
     setCurrentGuess(next);
   }, []);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const countdownValue = useCountdownTimer(countdown);
   const inputRef = useRef<HTMLInputElement>(null);
   const promptIdRef = useRef<string | null>(null);
   const promptReadyRef = useRef<boolean>(false);
@@ -167,24 +168,6 @@ const App: React.FC = () => {
       console.error('loss sfx failed', error);
     }
   }, []);
-
-  useEffect(() => {
-    if (!countdown) {
-      setCountdownValue(null);
-      return;
-    }
-    setCountdownValue(countdown.seconds);
-    const interval = setInterval(() => {
-      setCountdownValue((prev) => {
-        if (!prev || prev <= 1) {
-          clearInterval(interval);
-          return 1;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [countdown]);
 
   // Track which game summary we've played sounds for to avoid repeats
   const playedSummaryRef = useRef<string | null>(null);
