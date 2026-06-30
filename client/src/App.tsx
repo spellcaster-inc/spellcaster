@@ -2,12 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LandingPage from './pages/LandingPage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
+import EntryPage from './pages/EntryPage';
 import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
-import { EntryForm } from './components/EntryForm';
-import { ServerErrorBanner } from './components/ServerErrorBanner';
 import type { GameSettings } from '../../shared/types/socket';
 import { SERVER_URL } from './lib/config';
 import { DEFAULT_SETTINGS } from './lib/constants';
@@ -555,31 +554,18 @@ const App: React.FC = () => {
           }}
         />
       ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-4xl bg-slate-800/70 border border-slate-700 rounded-3xl shadow-xl p-6 space-y-6 relative">
-            <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold">spellcaster</h1>
-              <p className="text-sm text-slate-300">
-                dual-purpose spelling duels with real-time scoring, tts incantations, and wizard beams.
-              </p>
-            </div>
-
-            {error && <ServerErrorBanner message={error} onDismiss={clearError} />}
-
-            {!lobby && (
-              <EntryForm
-                playerName={playerName}
-                onPlayerNameChange={setPlayerName}
-                roomCodeInput={roomCodeInput}
-                onRoomCodeChange={setRoomCodeInput}
-                onOpenHostSettings={handleOpenHostSettings}
-                onJoin={handleJoin}
-                disabled={status !== 'connected'}
-              />
-            )}
-
-          </div>
-        </div>
+        <EntryPage
+          error={error}
+          onClearError={clearError}
+          showEntryForm={!lobby}
+          playerName={playerName}
+          onPlayerNameChange={setPlayerName}
+          roomCodeInput={roomCodeInput}
+          onRoomCodeChange={setRoomCodeInput}
+          onOpenHostSettings={handleOpenHostSettings}
+          onJoin={handleJoin}
+          entryDisabled={status !== 'connected'}
+        />
       )}
 
       {/* shared host settings modal, works on landing + game */}
