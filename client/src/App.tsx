@@ -9,13 +9,11 @@ import { useCountdownTimer } from './hooks/useCountdownTimer';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
 import type { GameSettings } from '../../shared/types/socket';
-import { SERVER_URL } from './lib/config';
 import { DEFAULT_SETTINGS } from './lib/constants';
-import type { SpellAudioTier, SpellAudioManifest } from './types/audio';
-import spellAudioManifest from '../../shared/spellAudioManifest.json';
-
-const SPELL_AUDIO_MANIFEST = spellAudioManifest as SpellAudioManifest;
-const SPELL_AUDIO_TIERS: SpellAudioTier[] = ['easy', 'medium', 'hard'];
+import {
+  buildSpellAudioLookup,
+  resolveSpellAudioUrl as resolveSpellAudioUrlFromManifest,
+} from './lib/spellAudio';
 
 const App: React.FC = () => {
   const { status } = useSocketConnection();
@@ -72,31 +70,10 @@ const App: React.FC = () => {
     }
     return false;
   }, [duel, lobby]);
-  const spellAudioLookup = useMemo(() => {
-    const lookup = new Map<string, string>();
-    SPELL_AUDIO_TIERS.forEach((tier) => {
-      SPELL_AUDIO_MANIFEST[tier].forEach(({ spell, file }) => {
-        lookup.set(spell.trim().toUpperCase(), file);
-      });
-    });
-    return lookup;
-  }, []);
+  const spellAudioLookup = useMemo(() => buildSpellAudioLookup(), []);
 
   const resolveSpellAudioUrl = useCallback(
-    (spellText: string) => {
-      if (!spellText) {
-        return null;
-      }
-      const raw = spellAudioLookup.get(spellText.trim().toUpperCase());
-      if (!raw) {
-        return null;
-      }
-      // If the URL is relative (starts with /audio/...), prefix with the server origin
-      if (raw.startsWith('/')) {
-        return `${SERVER_URL}${raw}`;
-      }
-      return raw;
-    },
+    (spellText: string) => resolveSpellAudioUrlFromManifest(spellAudioLookup, spellText),
     [spellAudioLookup]
   );
 
