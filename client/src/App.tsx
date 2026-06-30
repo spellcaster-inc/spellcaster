@@ -8,16 +8,10 @@ import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
 import type { GameSettings } from '../../shared/types/socket';
 import { SERVER_URL } from './lib/config';
+import { DEFAULT_SETTINGS } from './lib/constants';
+import type { SpellAudioTier, SpellAudioManifest } from './types/audio';
 import spellAudioManifest from '../../shared/spellAudioManifest.json';
 
-const DEFAULT_SETTINGS: GameSettings = {
-  difficulty: 'medium',
-  rounds: 5,
-  readingSpeed: 1,
-};
-
-type SpellAudioTier = 'easy' | 'medium' | 'hard';
-type SpellAudioManifest = Record<SpellAudioTier, Array<{ spell: string; file: string }>>;
 const SPELL_AUDIO_MANIFEST = spellAudioManifest as SpellAudioManifest;
 const SPELL_AUDIO_TIERS: SpellAudioTier[] = ['easy', 'medium', 'hard'];
 
