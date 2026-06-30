@@ -6,6 +6,8 @@ import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
+import { EntryForm } from './components/EntryForm';
+import { ServerErrorBanner } from './components/ServerErrorBanner';
 import type { GameSettings } from '../../shared/types/socket';
 import { SERVER_URL } from './lib/config';
 import { DEFAULT_SETTINGS } from './lib/constants';
@@ -494,52 +496,6 @@ const App: React.FC = () => {
     Boolean(roundSubmissions.playerIds[opponent.id]);
 
 
-  const renderEntry = () => (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2">
-        <label htmlFor="player-name" className="text-sm text-slate-300">
-          your wizard name
-        </label>
-        <input
-          id="player-name"
-          value={playerName}
-          onChange={(event) => setPlayerName(event.target.value)}
-          className="w-full rounded-lg border border-slate-600 bg-slate-900/70 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="ezra the typo slayer"
-        />
-      </div>
-
-      <div className="flex gap-3 flex-col sm:flex-row">
-        <button
-          className="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleOpenHostSettings}
-          disabled={status !== 'connected'}
-        >
-          create duel
-        </button>
-
-        <div className="flex-1 space-y-2">
-          <input
-            value={roomCodeInput}
-            onChange={(event) => setRoomCodeInput(event.target.value.toUpperCase())}
-            className="w-full rounded-lg border border-slate-600 bg-slate-900/70 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="room code"
-            maxLength={8}
-          />
-          <button
-            className="w-full py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleJoin}
-            disabled={status !== 'connected'}
-          >
-            join duel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-
-  
   return (
     <>
       {currentScreen === 'landing' ? (
@@ -608,19 +564,19 @@ const App: React.FC = () => {
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-lg border border-rose-600 bg-rose-900/30 px-3 py-2 text-sm text-rose-200 flex items-center justify-between gap-3">
-                <span>{error}</span>
-                <button
-                  onClick={clearError}
-                  className="text-xs uppercase tracking-wide underline underline-offset-2"
-                >
-                  dismiss
-                </button>
-              </div>
-            )}
+            {error && <ServerErrorBanner message={error} onDismiss={clearError} />}
 
-            {!lobby && renderEntry()}
+            {!lobby && (
+              <EntryForm
+                playerName={playerName}
+                onPlayerNameChange={setPlayerName}
+                roomCodeInput={roomCodeInput}
+                onRoomCodeChange={setRoomCodeInput}
+                onOpenHostSettings={handleOpenHostSettings}
+                onJoin={handleJoin}
+                disabled={status !== 'connected'}
+              />
+            )}
 
           </div>
         </div>
