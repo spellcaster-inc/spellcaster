@@ -40,11 +40,21 @@ export interface CountdownPayload {
   roundNumber: number;
   totalRounds: number;
   seconds: number;
-  spellText: string;
   readingSpeed: ReadingSpeed;
 }
 
-export interface SpellPromptPayload {
+export interface CatalogSpellPromptPayload {
+  mode: 'catalog';
+  roundNumber: number;
+  totalRounds: number;
+  promptId: string;
+  audioUrl: string;
+  readingSpeed: ReadingSpeed;
+  startedAt: string;
+}
+
+export interface CustomSpellPromptPayload {
+  mode: 'custom';
   roundNumber: number;
   totalRounds: number;
   promptId: string;
@@ -52,6 +62,8 @@ export interface SpellPromptPayload {
   readingSpeed: ReadingSpeed;
   startedAt: string;
 }
+
+export type SpellPromptPayload = CatalogSpellPromptPayload | CustomSpellPromptPayload;
 
 export interface PlayerRoundResult {
   playerId: string;

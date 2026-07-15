@@ -1,15 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { GameSummary, Player, SpellPromptPayload } from '../../../shared/types/socket';
-import {
-  buildSpellAudioLookup,
-  resolveSpellAudioUrl as resolveSpellAudioUrlFromManifest,
-} from '../lib/spellAudio';
 
 interface UseSpellAudioArgs {
   prompt: SpellPromptPayload | null;
   summary: GameSummary | null;
   localPlayer: Player | null;
-  shouldUseBrowserTts: boolean;
 }
 
 interface UseSpellAudioResult {
@@ -22,19 +17,11 @@ export function useSpellAudio({
   prompt,
   summary,
   localPlayer,
-  shouldUseBrowserTts,
 }: UseSpellAudioArgs): UseSpellAudioResult {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const victorySfxRef = useRef<HTMLAudioElement | null>(null);
   const lossSfxRef = useRef<HTMLAudioElement | null>(null);
   const browserSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
-
-  const spellAudioLookup = useMemo(() => buildSpellAudioLookup(), []);
-
-  const resolveSpellAudioUrl = useCallback(
-    (spellText: string) => resolveSpellAudioUrlFromManifest(spellAudioLookup, spellText),
-    [spellAudioLookup]
-  );
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -152,17 +139,7 @@ export function useSpellAudio({
       return;
     }
 
-    if (shouldUseBrowserTts) {
-      speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
-      return () => {
-        stopBrowserSpeech();
-      };
-    }
-
-    const audioUrl = resolveSpellAudioUrl(prompt.spellText);
-
-    if (!audioUrl) {
-      console.warn('No saved audio for spell, using browser voice instead.');
+    if (prompt.mode === 'custom') {
       speakWithBrowserTts(prompt.spellText, prompt.readingSpeed);
       return () => {
         stopBrowserSpeech();
@@ -175,7 +152,7 @@ export function useSpellAudio({
       if (cancelled) {
         return;
       }
-      await playAudioFromUrl(audioUrl);
+      await playAudioFromUrl(prompt.audioUrl);
     };
 
     play();
@@ -186,10 +163,8 @@ export function useSpellAudio({
     };
   }, [
     prompt,
-    resolveSpellAudioUrl,
     playAudioFromUrl,
     cleanupAudio,
-    shouldUseBrowserTts,
     speakWithBrowserTts,
     stopBrowserSpeech,
   ]);

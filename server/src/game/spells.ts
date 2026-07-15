@@ -1,23 +1,56 @@
 import { SpellDifficulty } from '../../../shared/types/socket';
 import spellCatalog from './spellCatalog.json';
+import { loadSpellAudioLookup } from './spellAudio';
 
 export interface SpellDefinition {
   id: string;
   text: string;
   difficulty: SpellDifficulty;
+  audioUrl?: string;
 }
 
 type CatalogDifficulty = Exclude<SpellDifficulty, 'custom'>;
 type SpellDictionary = Record<CatalogDifficulty, SpellDefinition[]>;
+type SpellCatalog = Record<CatalogDifficulty, string[]> & { _comment?: string };
+
+const audioLookup = loadSpellAudioLookup();
+
+const DIFFICULTY_PREFIX: Record<CatalogDifficulty, string> = {
+  easy: 'e',
+  medium: 'm',
+  hard: 'h',
+};
+
+function normalizeSpell(text: string) {
+  return text.trim().toUpperCase();
+}
+
+function getFallbackAudioUrl(difficulty: CatalogDifficulty, index: number) {
+  const id = String(index + 1).padStart(3, '0');
+  return `/audio/spells/${difficulty}/${DIFFICULTY_PREFIX[difficulty]}${id}.mp3`;
+}
 
 const createSpellList = (difficulty: SpellDifficulty, incantations: string[]): SpellDefinition[] =>
-  incantations.map((text, index) => ({
-    id: `${difficulty}-${index}`,
-    text,
-    difficulty,
-  }));
+  incantations.map((text, index) => {
+    if (difficulty === 'custom') {
+      return {
+        id: `${difficulty}-${index}`,
+        text,
+        difficulty,
+      };
+    }
 
-const spellWords = spellCatalog as Record<CatalogDifficulty, string[]>;
+    const catalogDifficulty = difficulty as CatalogDifficulty;
+    const audioUrl = audioLookup.get(normalizeSpell(text)) ?? getFallbackAudioUrl(catalogDifficulty, index);
+    return {
+      id: `${difficulty}-${index}`,
+      text,
+      difficulty,
+      audioUrl,
+    };
+  });
+
+const spellWords = spellCatalog as SpellCatalog;
 
 const spellData: SpellDictionary = {
   easy: createSpellList('easy', spellWords.easy),

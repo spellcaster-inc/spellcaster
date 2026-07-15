@@ -1,4 +1,5 @@
 {
+  "_comment": "Spell audio IDs (e001/m001/h001) are tied to array index. Only APPEND new spells to the end of each tier. Do not insert or reorder.",
   "easy": [
     "LUMOS",
     "LUMOS MAXIMA",
