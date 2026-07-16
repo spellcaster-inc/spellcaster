@@ -42,22 +42,12 @@ const App: React.FC = () => {
   const countdownValue = useCountdownTimer(countdown);
   const [hostSettingsModalOpen, setHostSettingsModalOpen] = useState(false);
   const [hostSettings, setHostSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  const shouldUseBrowserTts = useMemo(() => {
-    if (duel?.settings.difficulty === 'custom') {
-      return true;
-    }
-    if (!duel && lobby?.settings.difficulty === 'custom') {
-      return true;
-    }
-    return false;
-  }, [duel, lobby]);
   const inLobby = Boolean(lobby && lobby.phase === 'lobby');
   const inDuel = Boolean(lobby && lobby.phase === 'in-duel');
   const { playSpellCastSfx, cleanupAudio, stopBrowserSpeech } = useSpellAudio({
     prompt,
     summary,
     localPlayer,
-    shouldUseBrowserTts,
   });
   const {
     currentGuess,

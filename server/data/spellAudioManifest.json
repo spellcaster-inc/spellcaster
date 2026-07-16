@@ -1,0 +1,992 @@
+{
+  "easy": [
+    {
+      "spell": "LUMOS",
+      "audioUrl": "/audio/spells/easy/e001.mp3"
+    },
+    {
+      "spell": "LUMOS MAXIMA",
+      "audioUrl": "/audio/spells/easy/e002.mp3"
+    },
+    {
+      "spell": "NOX",
+      "audioUrl": "/audio/spells/easy/e003.mp3"
+    },
+    {
+      "spell": "FINITE",
+      "audioUrl": "/audio/spells/easy/e004.mp3"
+    },
+    {
+      "spell": "REPARO",
+      "audioUrl": "/audio/spells/easy/e005.mp3"
+    },
+    {
+      "spell": "FERULA",
+      "audioUrl": "/audio/spells/easy/e006.mp3"
+    },
+    {
+      "spell": "PROTEGO",
+      "audioUrl": "/audio/spells/easy/e007.mp3"
+    },
+    {
+      "spell": "QUIETUS",
+      "audioUrl": "/audio/spells/easy/e008.mp3"
+    },
+    {
+      "spell": "SONORUS",
+      "audioUrl": "/audio/spells/easy/e009.mp3"
+    },
+    {
+      "spell": "INCENDIO",
+      "audioUrl": "/audio/spells/easy/e010.mp3"
+    },
+    {
+      "spell": "DIFFINDO",
+      "audioUrl": "/audio/spells/easy/e011.mp3"
+    },
+    {
+      "spell": "SCURGIFY",
+      "audioUrl": "/audio/spells/easy/e012.mp3"
+    },
+    {
+      "spell": "MUFFLIATO",
+      "audioUrl": "/audio/spells/easy/e013.mp3"
+    },
+    {
+      "spell": "IMMOBULUS",
+      "audioUrl": "/audio/spells/easy/e014.mp3"
+    },
+    {
+      "spell": "ALOHOMORA",
+      "audioUrl": "/audio/spells/easy/e015.mp3"
+    },
+    {
+      "spell": "PORTUS",
+      "audioUrl": "/audio/spells/easy/e016.mp3"
+    },
+    {
+      "spell": "WINGARDIUM LEVIOSA",
+      "audioUrl": "/audio/spells/easy/e017.mp3"
+    },
+    {
+      "spell": "EXPELLIARMUS",
+      "audioUrl": "/audio/spells/easy/e018.mp3"
+    },
+    {
+      "spell": "RIDDIKULUS",
+      "audioUrl": "/audio/spells/easy/e019.mp3"
+    },
+    {
+      "spell": "GLACIUS",
+      "audioUrl": "/audio/spells/easy/e020.mp3"
+    },
+    {
+      "spell": "AERIS",
+      "audioUrl": "/audio/spells/easy/e021.mp3"
+    },
+    {
+      "spell": "IGNIS ORBIS",
+      "audioUrl": "/audio/spells/easy/e022.mp3"
+    },
+    {
+      "spell": "SPARKUS",
+      "audioUrl": "/audio/spells/easy/e023.mp3"
+    },
+    {
+      "spell": "VENTO",
+      "audioUrl": "/audio/spells/easy/e024.mp3"
+    },
+    {
+      "spell": "CLARUS",
+      "audioUrl": "/audio/spells/easy/e025.mp3"
+    },
+    {
+      "spell": "MAGNUS LUX",
+      "audioUrl": "/audio/spells/easy/e026.mp3"
+    },
+    {
+      "spell": "SOLVIO",
+      "audioUrl": "/audio/spells/easy/e027.mp3"
+    },
+    {
+      "spell": "HERBIFORS",
+      "audioUrl": "/audio/spells/easy/e028.mp3"
+    },
+    {
+      "spell": "AQUA ORIGIO",
+      "audioUrl": "/audio/spells/easy/e029.mp3"
+    },
+    {
+      "spell": "FLAMMA BREVIS",
+      "audioUrl": "/audio/spells/easy/e030.mp3"
+    },
+    {
+      "spell": "FRIGO",
+      "audioUrl": "/audio/spells/easy/e031.mp3"
+    },
+    {
+      "spell": "TERRA MINOR",
+      "audioUrl": "/audio/spells/easy/e032.mp3"
+    },
+    {
+      "spell": "BRILLIO",
+      "audioUrl": "/audio/spells/easy/e033.mp3"
+    },
+    {
+      "spell": "SOFTUS",
+      "audioUrl": "/audio/spells/easy/e034.mp3"
+    },
+    {
+      "spell": "FIZZLE POP",
+      "audioUrl": "/audio/spells/easy/e035.mp3"
+    },
+    {
+      "spell": "GLOWFLIT",
+      "audioUrl": "/audio/spells/easy/e036.mp3"
+    },
+    {
+      "spell": "BREEZIA",
+      "audioUrl": "/audio/spells/easy/e037.mp3"
+    },
+    {
+      "spell": "TWINKLUM",
+      "audioUrl": "/audio/spells/easy/e038.mp3"
+    },
+    {
+      "spell": "FLOATO",
+      "audioUrl": "/audio/spells/easy/e039.mp3"
+    },
+    {
+      "spell": "MENDIS",
+      "audioUrl": "/audio/spells/easy/e040.mp3"
+    },
+    {
+      "spell": "GUSTLET",
+      "audioUrl": "/audio/spells/easy/e041.mp3"
+    },
+    {
+      "spell": "LILT LUX",
+      "audioUrl": "/audio/spells/easy/e042.mp3"
+    },
+    {
+      "spell": "AQUA NIP",
+      "audioUrl": "/audio/spells/easy/e043.mp3"
+    },
+    {
+      "spell": "PETRA TAP",
+      "audioUrl": "/audio/spells/easy/e044.mp3"
+    },
+    {
+      "spell": "EMBER NOD",
+      "audioUrl": "/audio/spells/easy/e045.mp3"
+    },
+    {
+      "spell": "SHIFTO",
+      "audioUrl": "/audio/spells/easy/e046.mp3"
+    },
+    {
+      "spell": "TIDYUS",
+      "audioUrl": "/audio/spells/easy/e047.mp3"
+    },
+    {
+      "spell": "PETALO",
+      "audioUrl": "/audio/spells/easy/e048.mp3"
+    },
+    {
+      "spell": "NIMBUS NIP",
+      "audioUrl": "/audio/spells/easy/e049.mp3"
+    },
+    {
+      "spell": "PLUMA",
+      "audioUrl": "/audio/spells/easy/e050.mp3"
+    },
+    {
+      "spell": "FROSTIP",
+      "audioUrl": "/audio/spells/easy/e051.mp3"
+    },
+    {
+      "spell": "HUSHIO",
+      "audioUrl": "/audio/spells/easy/e052.mp3"
+    },
+    {
+      "spell": "GIGGLO",
+      "audioUrl": "/audio/spells/easy/e053.mp3"
+    },
+    {
+      "spell": "FOCUSO",
+      "audioUrl": "/audio/spells/easy/e054.mp3"
+    },
+    {
+      "spell": "BUBBLIO",
+      "audioUrl": "/audio/spells/easy/e055.mp3"
+    },
+    {
+      "spell": "QUICKLIX",
+      "audioUrl": "/audio/spells/easy/e056.mp3"
+    },
+    {
+      "spell": "PATCHUS",
+      "audioUrl": "/audio/spells/easy/e057.mp3"
+    },
+    {
+      "spell": "CHROMO",
+      "audioUrl": "/audio/spells/easy/e058.mp3"
+    },
+    {
+      "spell": "SLICKUS",
+      "audioUrl": "/audio/spells/easy/e059.mp3"
+    },
+    {
+      "spell": "BRISA",
+      "audioUrl": "/audio/spells/easy/e060.mp3"
+    },
+    {
+      "spell": "NESTO",
+      "audioUrl": "/audio/spells/easy/e061.mp3"
+    },
+    {
+      "spell": "LUMI TWIST",
+      "audioUrl": "/audio/spells/easy/e062.mp3"
+    },
+    {
+      "spell": "SUGARUS",
+      "audioUrl": "/audio/spells/easy/e063.mp3"
+    },
+    {
+      "spell": "GEMINO LITE",
+      "audioUrl": "/audio/spells/easy/e064.mp3"
+    },
+    {
+      "spell": "PIPERUS",
+      "audioUrl": "/audio/spells/easy/e065.mp3"
+    },
+    {
+      "spell": "FRESHIA",
+      "audioUrl": "/audio/spells/easy/e066.mp3"
+    },
+    {
+      "spell": "GLOBO",
+      "audioUrl": "/audio/spells/easy/e067.mp3"
+    },
+    {
+      "spell": "MELLOW SPARK",
+      "audioUrl": "/audio/spells/easy/e068.mp3"
+    },
+    {
+      "spell": "NIFTY NOX",
+      "audioUrl": "/audio/spells/easy/e069.mp3"
+    },
+    {
+      "spell": "FLIPPO",
+      "audioUrl": "/audio/spells/easy/e070.mp3"
+    },
+    {
+      "spell": "DAPPERIS",
+      "audioUrl": "/audio/spells/easy/e071.mp3"
+    },
+    {
+      "spell": "CHEERIO",
+      "audioUrl": "/audio/spells/easy/e072.mp3"
+    },
+    {
+      "spell": "TINKER TAP",
+      "audioUrl": "/audio/spells/easy/e073.mp3"
+    },
+    {
+      "spell": "BLOOMIO",
+      "audioUrl": "/audio/spells/easy/e074.mp3"
+    },
+    {
+      "spell": "GLIMMER DOT",
+      "audioUrl": "/audio/spells/easy/e075.mp3"
+    },
+    {
+      "spell": "PEBBLA",
+      "audioUrl": "/audio/spells/easy/e076.mp3"
+    },
+    {
+      "spell": "WHISKO",
+      "audioUrl": "/audio/spells/easy/e077.mp3"
+    },
+    {
+      "spell": "EASY BREEZE",
+      "audioUrl": "/audio/spells/easy/e078.mp3"
+    },
+    {
+      "spell": "SILKEN LIGHT",
+      "audioUrl": "/audio/spells/easy/e079.mp3"
+    },
+    {
+      "spell": "CALMO",
+      "audioUrl": "/audio/spells/easy/e080.mp3"
+    },
+    {
+      "spell": "SIMPLIAR",
+      "audioUrl": "/audio/spells/easy/e081.mp3"
+    },
+    {
+      "spell": "NOVA NIP",
+      "audioUrl": "/audio/spells/easy/e082.mp3"
+    }
+  ],
+  "medium": [
+    {
+      "spell": "EXPECTO PATRONUM",
+      "audioUrl": "/audio/spells/medium/m001.mp3"
+    },
+    {
+      "spell": "REDUCTO",
+      "audioUrl": "/audio/spells/medium/m002.mp3"
+    },
+    {
+      "spell": "CONFUNDO",
+      "audioUrl": "/audio/spells/medium/m003.mp3"
+    },
+    {
+      "spell": "SILENCIO",
+      "audioUrl": "/audio/spells/medium/m004.mp3"
+    },
+    {
+      "spell": "OPPUGNO",
+      "audioUrl": "/audio/spells/medium/m005.mp3"
+    },
+    {
+      "spell": "IMPERVIUS",
+      "audioUrl": "/audio/spells/medium/m006.mp3"
+    },
+    {
+      "spell": "LEVICORPUS",
+      "audioUrl": "/audio/spells/medium/m007.mp3"
+    },
+    {
+      "spell": "AVIFORS",
+      "audioUrl": "/audio/spells/medium/m008.mp3"
+    },
+    {
+      "spell": "ARRESTO MOMENTUM",
+      "audioUrl": "/audio/spells/medium/m009.mp3"
+    },
+    {
+      "spell": "RAPTORIALIS IGNIS",
+      "audioUrl": "/audio/spells/medium/m010.mp3"
+    },
+    {
+      "spell": "CAELUM TEMPESTAS",
+      "audioUrl": "/audio/spells/medium/m011.mp3"
+    },
+    {
+      "spell": "VENTUS TURBINE",
+      "audioUrl": "/audio/spells/medium/m012.mp3"
+    },
+    {
+      "spell": "FULGARIUS",
+      "audioUrl": "/audio/spells/medium/m013.mp3"
+    },
+    {
+      "spell": "CALIGO SPIRA",
+      "audioUrl": "/audio/spells/medium/m014.mp3"
+    },
+    {
+      "spell": "MORS VINCULA",
+      "audioUrl": "/audio/spells/medium/m015.mp3"
+    },
+    {
+      "spell": "VIGILO OCULUS",
+      "audioUrl": "/audio/spells/medium/m016.mp3"
+    },
+    {
+      "spell": "VOLATUS AETERNA",
+      "audioUrl": "/audio/spells/medium/m017.mp3"
+    },
+    {
+      "spell": "TENEBRAE LIGARE",
+      "audioUrl": "/audio/spells/medium/m018.mp3"
+    },
+    {
+      "spell": "SECTUMSEMPRA",
+      "audioUrl": "/audio/spells/medium/m019.mp3"
+    },
+    {
+      "spell": "AQUA ERUPTIO",
+      "audioUrl": "/audio/spells/medium/m020.mp3"
+    },
+    {
+      "spell": "FUMOSIA",
+      "audioUrl": "/audio/spells/medium/m021.mp3"
+    },
+    {
+      "spell": "MENTIS CLARITAS",
+      "audioUrl": "/audio/spells/medium/m022.mp3"
+    },
+    {
+      "spell": "AETERNA LUMEN",
+      "audioUrl": "/audio/spells/medium/m023.mp3"
+    },
+    {
+      "spell": "UMBRAE CURSOR",
+      "audioUrl": "/audio/spells/medium/m024.mp3"
+    },
+    {
+      "spell": "TELUM AERIS",
+      "audioUrl": "/audio/spells/medium/m025.mp3"
+    },
+    {
+      "spell": "FLAMMA SERPENS",
+      "audioUrl": "/audio/spells/medium/m026.mp3"
+    },
+    {
+      "spell": "CORVUS VIGILANS",
+      "audioUrl": "/audio/spells/medium/m027.mp3"
+    },
+    {
+      "spell": "SAXUM VOLATUM",
+      "audioUrl": "/audio/spells/medium/m028.mp3"
+    },
+    {
+      "spell": "AETHRA SONITUS",
+      "audioUrl": "/audio/spells/medium/m029.mp3"
+    },
+    {
+      "spell": "GELUM FRACTIS",
+      "audioUrl": "/audio/spells/medium/m030.mp3"
+    },
+    {
+      "spell": "VENTUS SAGITTA",
+      "audioUrl": "/audio/spells/medium/m031.mp3"
+    },
+    {
+      "spell": "ARCUS IGNIFER",
+      "audioUrl": "/audio/spells/medium/m032.mp3"
+    },
+    {
+      "spell": "LIGATUM HERBAE",
+      "audioUrl": "/audio/spells/medium/m033.mp3"
+    },
+    {
+      "spell": "SERPENS FULGOR",
+      "audioUrl": "/audio/spells/medium/m034.mp3"
+    },
+    {
+      "spell": "AQUILA VENTOR",
+      "audioUrl": "/audio/spells/medium/m035.mp3"
+    },
+    {
+      "spell": "VORTEX LUMEN",
+      "audioUrl": "/audio/spells/medium/m036.mp3"
+    },
+    {
+      "spell": "ARCANA RESONUS",
+      "audioUrl": "/audio/spells/medium/m037.mp3"
+    },
+    {
+      "spell": "FEROX VELUM",
+      "audioUrl": "/audio/spells/medium/m038.mp3"
+    },
+    {
+      "spell": "MELIORA IGNIS",
+      "audioUrl": "/audio/spells/medium/m039.mp3"
+    },
+    {
+      "spell": "MYSTARA RADIUS",
+      "audioUrl": "/audio/spells/medium/m040.mp3"
+    },
+    {
+      "spell": "ARCADIUS TEMPEST",
+      "audioUrl": "/audio/spells/medium/m041.mp3"
+    },
+    {
+      "spell": "CERA LUCENTIS",
+      "audioUrl": "/audio/spells/medium/m042.mp3"
+    },
+    {
+      "spell": "GLADIUS FRIGUS",
+      "audioUrl": "/audio/spells/medium/m043.mp3"
+    },
+    {
+      "spell": "ORBITA FERVOR",
+      "audioUrl": "/audio/spells/medium/m044.mp3"
+    },
+    {
+      "spell": "VITA SPIRALIS",
+      "audioUrl": "/audio/spells/medium/m045.mp3"
+    },
+    {
+      "spell": "SOMNIA CLARIOR",
+      "audioUrl": "/audio/spells/medium/m046.mp3"
+    },
+    {
+      "spell": "RUBRIS AURORA",
+      "audioUrl": "/audio/spells/medium/m047.mp3"
+    },
+    {
+      "spell": "CAECUS PULSAR",
+      "audioUrl": "/audio/spells/medium/m048.mp3"
+    },
+    {
+      "spell": "VIGOR EXHALO",
+      "audioUrl": "/audio/spells/medium/m049.mp3"
+    },
+    {
+      "spell": "MANTRA SILEX",
+      "audioUrl": "/audio/spells/medium/m050.mp3"
+    },
+    {
+      "spell": "FERRUM SONO",
+      "audioUrl": "/audio/spells/medium/m051.mp3"
+    },
+    {
+      "spell": "FLUXA RADIANT",
+      "audioUrl": "/audio/spells/medium/m052.mp3"
+    },
+    {
+      "spell": "VELOCIS TERRA",
+      "audioUrl": "/audio/spells/medium/m053.mp3"
+    },
+    {
+      "spell": "NIMBUS LACERA",
+      "audioUrl": "/audio/spells/medium/m054.mp3"
+    },
+    {
+      "spell": "SERICA VOLATE",
+      "audioUrl": "/audio/spells/medium/m055.mp3"
+    },
+    {
+      "spell": "FASCIO SERPENTIS",
+      "audioUrl": "/audio/spells/medium/m056.mp3"
+    },
+    {
+      "spell": "VOX ARGENTA",
+      "audioUrl": "/audio/spells/medium/m057.mp3"
+    },
+    {
+      "spell": "LUMEN VESTRA",
+      "audioUrl": "/audio/spells/medium/m058.mp3"
+    },
+    {
+      "spell": "GLACIA RAPIDI",
+      "audioUrl": "/audio/spells/medium/m059.mp3"
+    },
+    {
+      "spell": "CIRRUS ADVENA",
+      "audioUrl": "/audio/spells/medium/m060.mp3"
+    },
+    {
+      "spell": "PRAESTO UMBRA",
+      "audioUrl": "/audio/spells/medium/m061.mp3"
+    },
+    {
+      "spell": "PYRAE CURSOR",
+      "audioUrl": "/audio/spells/medium/m062.mp3"
+    },
+    {
+      "spell": "NEXA TIDALIS",
+      "audioUrl": "/audio/spells/medium/m063.mp3"
+    },
+    {
+      "spell": "SAXA HELIX",
+      "audioUrl": "/audio/spells/medium/m064.mp3"
+    },
+    {
+      "spell": "TORRENT VIGILO",
+      "audioUrl": "/audio/spells/medium/m065.mp3"
+    },
+    {
+      "spell": "AERAS CONTO",
+      "audioUrl": "/audio/spells/medium/m066.mp3"
+    },
+    {
+      "spell": "FULGOR VELARI",
+      "audioUrl": "/audio/spells/medium/m067.mp3"
+    },
+    {
+      "spell": "SEPTA IGNARIA",
+      "audioUrl": "/audio/spells/medium/m068.mp3"
+    },
+    {
+      "spell": "VENTRIS MAGNUS",
+      "audioUrl": "/audio/spells/medium/m069.mp3"
+    },
+    {
+      "spell": "CLARION AQUEOUS",
+      "audioUrl": "/audio/spells/medium/m070.mp3"
+    },
+    {
+      "spell": "CAELUM RIPTIDE",
+      "audioUrl": "/audio/spells/medium/m071.mp3"
+    },
+    {
+      "spell": "ELECTA VINCIO",
+      "audioUrl": "/audio/spells/medium/m072.mp3"
+    },
+    {
+      "spell": "UMBRAE SYLVAN",
+      "audioUrl": "/audio/spells/medium/m073.mp3"
+    },
+    {
+      "spell": "SPATIO TRAMAR",
+      "audioUrl": "/audio/spells/medium/m074.mp3"
+    },
+    {
+      "spell": "ARGENTUM VOLA",
+      "audioUrl": "/audio/spells/medium/m075.mp3"
+    },
+    {
+      "spell": "CALIDUS BOREA",
+      "audioUrl": "/audio/spells/medium/m076.mp3"
+    },
+    {
+      "spell": "MIRABILIS SERVO",
+      "audioUrl": "/audio/spells/medium/m077.mp3"
+    },
+    {
+      "spell": "AESTU VIVERA",
+      "audioUrl": "/audio/spells/medium/m078.mp3"
+    },
+    {
+      "spell": "ORBIS TECTA",
+      "audioUrl": "/audio/spells/medium/m079.mp3"
+    },
+    {
+      "spell": "FUSIO REX",
+      "audioUrl": "/audio/spells/medium/m080.mp3"
+    },
+    {
+      "spell": "SYLVO TONITRA",
+      "audioUrl": "/audio/spells/medium/m081.mp3"
+    },
+    {
+      "spell": "CORONA ARCANUM",
+      "audioUrl": "/audio/spells/medium/m082.mp3"
+    },
+    {
+      "spell": "VENTO PRAXIS",
+      "audioUrl": "/audio/spells/medium/m083.mp3"
+    },
+    {
+      "spell": "IGNIS CADENTIA",
+      "audioUrl": "/audio/spells/medium/m084.mp3"
+    }
+  ],
+  "hard": [
+    {
+      "spell": "AVADA KEDAVRA",
+      "audioUrl": "/audio/spells/hard/h001.mp3"
+    },
+    {
+      "spell": "CRUCIO",
+      "audioUrl": "/audio/spells/hard/h002.mp3"
+    },
+    {
+      "spell": "IMPERIO",
+      "audioUrl": "/audio/spells/hard/h003.mp3"
+    },
+    {
+      "spell": "FIENDFYRE",
+      "audioUrl": "/audio/spells/hard/h004.mp3"
+    },
+    {
+      "spell": "VOLATILIS FULMEN",
+      "audioUrl": "/audio/spells/hard/h005.mp3"
+    },
+    {
+      "spell": "AER LACERUM",
+      "audioUrl": "/audio/spells/hard/h006.mp3"
+    },
+    {
+      "spell": "MORS CERULEA",
+      "audioUrl": "/audio/spells/hard/h007.mp3"
+    },
+    {
+      "spell": "SANGUINIS CIRCULO",
+      "audioUrl": "/audio/spells/hard/h008.mp3"
+    },
+    {
+      "spell": "NECROSI CATENA",
+      "audioUrl": "/audio/spells/hard/h009.mp3"
+    },
+    {
+      "spell": "UMBRA CONFLAGRATIO",
+      "audioUrl": "/audio/spells/hard/h010.mp3"
+    },
+    {
+      "spell": "UMBRAE DEVORO",
+      "audioUrl": "/audio/spells/hard/h011.mp3"
+    },
+    {
+      "spell": "HORRENDUM SPIRA",
+      "audioUrl": "/audio/spells/hard/h012.mp3"
+    },
+    {
+      "spell": "INCURSUS NOCTURNA",
+      "audioUrl": "/audio/spells/hard/h013.mp3"
+    },
+    {
+      "spell": "OBSCURA VERITAS",
+      "audioUrl": "/audio/spells/hard/h014.mp3"
+    },
+    {
+      "spell": "INFINITAS SOMNUS",
+      "audioUrl": "/audio/spells/hard/h015.mp3"
+    },
+    {
+      "spell": "MALIFICUS LAMINA",
+      "audioUrl": "/audio/spells/hard/h016.mp3"
+    },
+    {
+      "spell": "GLACIES RUINAM",
+      "audioUrl": "/audio/spells/hard/h017.mp3"
+    },
+    {
+      "spell": "FUROR TEMPESTAS",
+      "audioUrl": "/audio/spells/hard/h018.mp3"
+    },
+    {
+      "spell": "ARCANA VORTEX",
+      "audioUrl": "/audio/spells/hard/h019.mp3"
+    },
+    {
+      "spell": "VULNERA SANENTUR",
+      "audioUrl": "/audio/spells/hard/h020.mp3"
+    },
+    {
+      "spell": "TENEBRIS DOMINUS",
+      "audioUrl": "/audio/spells/hard/h021.mp3"
+    },
+    {
+      "spell": "AURUM MORTIS",
+      "audioUrl": "/audio/spells/hard/h022.mp3"
+    },
+    {
+      "spell": "CORRUMPERE VIGOR",
+      "audioUrl": "/audio/spells/hard/h023.mp3"
+    },
+    {
+      "spell": "INVICTA SPIRA",
+      "audioUrl": "/audio/spells/hard/h024.mp3"
+    },
+    {
+      "spell": "RUPTURA AETERNI",
+      "audioUrl": "/audio/spells/hard/h025.mp3"
+    },
+    {
+      "spell": "VOLUNTAS MORTUUM",
+      "audioUrl": "/audio/spells/hard/h026.mp3"
+    },
+    {
+      "spell": "LAPSUS ANIMA",
+      "audioUrl": "/audio/spells/hard/h027.mp3"
+    },
+    {
+      "spell": "UMBRAFERRUM",
+      "audioUrl": "/audio/spells/hard/h028.mp3"
+    },
+    {
+      "spell": "FRIGUS ABYSSUM",
+      "audioUrl": "/audio/spells/hard/h029.mp3"
+    },
+    {
+      "spell": "TEMPESTAS MORTEM",
+      "audioUrl": "/audio/spells/hard/h030.mp3"
+    },
+    {
+      "spell": "ABYSSUS LUXATE",
+      "audioUrl": "/audio/spells/hard/h031.mp3"
+    },
+    {
+      "spell": "VINDICTA NOCTURNA",
+      "audioUrl": "/audio/spells/hard/h032.mp3"
+    },
+    {
+      "spell": "CALVARIA TEMPESTAS",
+      "audioUrl": "/audio/spells/hard/h033.mp3"
+    },
+    {
+      "spell": "MORTAELIS VORAGO",
+      "audioUrl": "/audio/spells/hard/h034.mp3"
+    },
+    {
+      "spell": "INFINIUM RUPTURA",
+      "audioUrl": "/audio/spells/hard/h035.mp3"
+    },
+    {
+      "spell": "SANGUIS AETERLASH",
+      "audioUrl": "/audio/spells/hard/h036.mp3"
+    },
+    {
+      "spell": "OBLIVIO ECLIPSAR",
+      "audioUrl": "/audio/spells/hard/h037.mp3"
+    },
+    {
+      "spell": "VIRTIGO NIGER",
+      "audioUrl": "/audio/spells/hard/h038.mp3"
+    },
+    {
+      "spell": "TENEBRAE CATACLISM",
+      "audioUrl": "/audio/spells/hard/h039.mp3"
+    },
+    {
+      "spell": "FURIOSA MALLEUS",
+      "audioUrl": "/audio/spells/hard/h040.mp3"
+    },
+    {
+      "spell": "NOVAEL MORDAX",
+      "audioUrl": "/audio/spells/hard/h041.mp3"
+    },
+    {
+      "spell": "VORPALIS SOMNIUM",
+      "audioUrl": "/audio/spells/hard/h042.mp3"
+    },
+    {
+      "spell": "CRYPTERA INVICTUS",
+      "audioUrl": "/audio/spells/hard/h043.mp3"
+    },
+    {
+      "spell": "UMBRANA DIVORTIS",
+      "audioUrl": "/audio/spells/hard/h044.mp3"
+    },
+    {
+      "spell": "ASTRALE DILACERO",
+      "audioUrl": "/audio/spells/hard/h045.mp3"
+    },
+    {
+      "spell": "RAVENOR UMBRICA",
+      "audioUrl": "/audio/spells/hard/h046.mp3"
+    },
+    {
+      "spell": "VOLTURIS NOXIUM",
+      "audioUrl": "/audio/spells/hard/h047.mp3"
+    },
+    {
+      "spell": "LAPSARIA OBSCURUM",
+      "audioUrl": "/audio/spells/hard/h048.mp3"
+    },
+    {
+      "spell": "NEXIUM VEHEMENS",
+      "audioUrl": "/audio/spells/hard/h049.mp3"
+    },
+    {
+      "spell": "CHROMAELIS PERNICIES",
+      "audioUrl": "/audio/spells/hard/h050.mp3"
+    },
+    {
+      "spell": "RIGORIS ABYSSAL",
+      "audioUrl": "/audio/spells/hard/h051.mp3"
+    },
+    {
+      "spell": "FERRATA MALEDICTO",
+      "audioUrl": "/audio/spells/hard/h052.mp3"
+    },
+    {
+      "spell": "VIGILUM DESTRUCTOR",
+      "audioUrl": "/audio/spells/hard/h053.mp3"
+    },
+    {
+      "spell": "AURORA NECROS",
+      "audioUrl": "/audio/spells/hard/h054.mp3"
+    },
+    {
+      "spell": "INCENTIA VORTEX",
+      "audioUrl": "/audio/spells/hard/h055.mp3"
+    },
+    {
+      "spell": "MALORUM SONUS",
+      "audioUrl": "/audio/spells/hard/h056.mp3"
+    },
+    {
+      "spell": "VEXILLA UMBRAFALL",
+      "audioUrl": "/audio/spells/hard/h057.mp3"
+    },
+    {
+      "spell": "ARBITRIUM LACERTE",
+      "audioUrl": "/audio/spells/hard/h058.mp3"
+    },
+    {
+      "spell": "NIGERIS FULGOR",
+      "audioUrl": "/audio/spells/hard/h059.mp3"
+    },
+    {
+      "spell": "VENTRAXIS RUINUM",
+      "audioUrl": "/audio/spells/hard/h060.mp3"
+    },
+    {
+      "spell": "EXSOLVO DAMNARE",
+      "audioUrl": "/audio/spells/hard/h061.mp3"
+    },
+    {
+      "spell": "MORDENTIA SILVAR",
+      "audioUrl": "/audio/spells/hard/h062.mp3"
+    },
+    {
+      "spell": "ULTRA SCINDERE",
+      "audioUrl": "/audio/spells/hard/h063.mp3"
+    },
+    {
+      "spell": "SPECTRUM FRANGERE",
+      "audioUrl": "/audio/spells/hard/h064.mp3"
+    },
+    {
+      "spell": "VIOREX TORMENTA",
+      "audioUrl": "/audio/spells/hard/h065.mp3"
+    },
+    {
+      "spell": "IMMORTA QUELLUM",
+      "audioUrl": "/audio/spells/hard/h066.mp3"
+    },
+    {
+      "spell": "AETERNO FRACTURE",
+      "audioUrl": "/audio/spells/hard/h067.mp3"
+    },
+    {
+      "spell": "OBSIDIO PYRUM",
+      "audioUrl": "/audio/spells/hard/h068.mp3"
+    },
+    {
+      "spell": "VORAGO PEREGRUS",
+      "audioUrl": "/audio/spells/hard/h069.mp3"
+    },
+    {
+      "spell": "LIMBUS STRATAGEM",
+      "audioUrl": "/audio/spells/hard/h070.mp3"
+    },
+    {
+      "spell": "ARCENDIS NOCTILUX",
+      "audioUrl": "/audio/spells/hard/h071.mp3"
+    },
+    {
+      "spell": "ECLIPSAE VERSUS",
+      "audioUrl": "/audio/spells/hard/h072.mp3"
+    },
+    {
+      "spell": "SABRIAE TYRANNUS",
+      "audioUrl": "/audio/spells/hard/h073.mp3"
+    },
+    {
+      "spell": "VITALIS CARNIFEX",
+      "audioUrl": "/audio/spells/hard/h074.mp3"
+    },
+    {
+      "spell": "VENENUM CORRUPTA",
+      "audioUrl": "/audio/spells/hard/h075.mp3"
+    },
+    {
+      "spell": "DEIMOS CRESCERE",
+      "audioUrl": "/audio/spells/hard/h076.mp3"
+    },
+    {
+      "spell": "RAPTORIS NOCTE",
+      "audioUrl": "/audio/spells/hard/h077.mp3"
+    },
+    {
+      "spell": "CORVORUM ABOLERE",
+      "audioUrl": "/audio/spells/hard/h078.mp3"
+    },
+    {
+      "spell": "FANTASMA VINDICO",
+      "audioUrl": "/audio/spells/hard/h079.mp3"
+    },
+    {
+      "spell": "RADIUS MORBIDEX",
+      "audioUrl": "/audio/spells/hard/h080.mp3"
+    }
+  ]
+}

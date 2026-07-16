@@ -202,13 +202,10 @@ export class DuelManager {
       this.startRound(duel.roomCode);
     }, COUNTDOWN_MS);
 
-    const nextSpell = duel.spellQueue[duel.currentRoundIndex];
-
     this.deps.io.to(duel.roomCode).emit('duel:countdown', {
       roundNumber: duel.currentRoundIndex + 1,
       totalRounds: duel.settings.rounds,
       seconds: COUNTDOWN_MS / 1000,
-      spellText: nextSpell?.text ?? '',
       readingSpeed: duel.settings.readingSpeed,
     });
   }
@@ -245,14 +242,28 @@ export class DuelManager {
       this.forceRoundCompletion(duel);
     }, ROUND_TIMEOUT_MS);
 
-    this.deps.io.to(roomCode).emit('duel:prompt', {
-      roundNumber,
-      totalRounds: duel.settings.rounds,
-      promptId,
-      spellText: spell.text,
-      readingSpeed: duel.settings.readingSpeed,
-      startedAt: startedAtIso,
-    });
+    const promptPayload =
+      duel.settings.difficulty === 'custom' || !spell.audioUrl
+        ? {
+            mode: 'custom' as const,
+            roundNumber,
+            totalRounds: duel.settings.rounds,
+            promptId,
+            spellText: spell.text,
+            readingSpeed: duel.settings.readingSpeed,
+            startedAt: startedAtIso,
+          }
+        : {
+            mode: 'catalog' as const,
+            roundNumber,
+            totalRounds: duel.settings.rounds,
+            promptId,
+            audioUrl: spell.audioUrl,
+            readingSpeed: duel.settings.readingSpeed,
+            startedAt: startedAtIso,
+          };
+
+    this.deps.io.to(roomCode).emit('duel:prompt', promptPayload);
   }
 
   private forceRoundCompletion(duel: ActiveDuel) {
