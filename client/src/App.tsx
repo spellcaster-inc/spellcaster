@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import LandingPage from './pages/LandingPage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
-import EntryPage from './pages/EntryPage';
 import { useSocketConnection } from './hooks/useSocketConnection';
 import { useLobby } from './hooks/useLobby';
 import { useCountdownTimer } from './hooks/useCountdownTimer';
@@ -12,6 +11,8 @@ import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
 import type { GameSettings } from '../../shared/types/socket';
 import { DEFAULT_SETTINGS } from './lib/constants';
+
+const CREATE_LOBBY_TIMEOUT_MS = 10_000;
 
 const App: React.FC = () => {
   const { status } = useSocketConnection();
@@ -25,7 +26,9 @@ const App: React.FC = () => {
     roundSubmissions,
     error,
     localPlayer,
+    isCreatePending,
     createLobby,
+    cancelPendingCreate,
     joinLobby,
     leaveLobby,
     setReady,
@@ -37,7 +40,6 @@ const App: React.FC = () => {
 
   const [playerName, setPlayerName] = useState('');
   const [playerWizardId, setPlayerWizardId] = useState<string>('violet-warden');
-  const [roomCodeInput, setRoomCodeInput] = useState('');
   const [currentScreen, setCurrentScreen] = useState<'landing' | 'game'>('landing');
   const countdownValue = useCountdownTimer(countdown);
   const [hostSettingsModalOpen, setHostSettingsModalOpen] = useState(false);
@@ -68,27 +70,19 @@ const App: React.FC = () => {
   });
 
   const handleLandingHostGame = (nickname: string, wizardId: string) => {
-    const safeName =  nickname.trim() || 'WIZARD';
+    const safeName = nickname.trim() || 'WIZARD';
     setPlayerName(safeName);
     setPlayerWizardId(wizardId);
-  
-    // open the existing host settings modal – same wiring as before
     handleOpenHostSettings();
   };
-  
+
   const handleLandingJoinGame = (nickname: string, joinCode: string, wizardId: string) => {
     const safeName = nickname.trim() || 'WIZARD';
     const code = joinCode.trim().toUpperCase();
 
     setPlayerName(safeName);
     setPlayerWizardId(wizardId);
-    setRoomCodeInput(code);
-
-    // use the existing joinLobby logic
     joinLobby(code, safeName, wizardId);
-
-    // Don't switch screens immediately - wait for lobby state or error
-    // The useEffect below will handle switching to 'game' when lobby is received
   };
 
   useEffect(() => {
@@ -97,31 +91,38 @@ const App: React.FC = () => {
     }
   }, [hostSettingsModalOpen, lobby]);
 
-  // Handle screen transitions based on lobby state
   useEffect(() => {
-    // If we have a lobby, switch to game screen and clear any errors
     if (lobby && currentScreen === 'landing') {
       setCurrentScreen('game');
       clearError();
     }
-    // If we lose the lobby and we're on game screen, go back to landing
     if (!lobby && currentScreen === 'game') {
       setCurrentScreen('landing');
     }
   }, [lobby, currentScreen, clearError]);
 
+  useEffect(() => {
+    if (!isCreatePending) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      cancelPendingCreate("Couldn't create lobby. Check your connection and try again.");
+    }, CREATE_LOBBY_TIMEOUT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [isCreatePending, cancelPendingCreate]);
+
   const activePlayers = useMemo(() => duel?.players ?? lobby?.players ?? [], [duel, lobby]);
   const hostSettingsReadyForConfirm =
     status === 'connected' &&
+    !isCreatePending &&
     (hostSettings.difficulty !== 'custom' || (hostSettings.customWords?.length ?? 0) > 0);
 
   const currentRoundNumber =
     countdown?.roundNumber ?? prompt?.roundNumber ?? roundRecap?.roundNumber ?? duel?.round ?? 1;
 
-  const handleCreate = () => createLobby(playerName, hostSettings, playerWizardId);
-  const handleJoin = () => joinLobby(roomCodeInput, playerName, playerWizardId);
   const handleReadyToggle = () => setReady(!localPlayer?.ready);
   const handleOpenHostSettings = () => {
+    clearError();
     setHostSettings({ ...DEFAULT_SETTINGS });
     setHostSettingsModalOpen(true);
   };
@@ -132,8 +133,15 @@ const App: React.FC = () => {
     }));
   };
   const handleConfirmHostSettings = () => {
-    handleCreate();
-    setCurrentScreen('game');
+    clearError();
+    createLobby(playerName, hostSettings, playerWizardId);
+  };
+  const handleCancelHostSettings = () => {
+    if (isCreatePending) {
+      return;
+    }
+    setHostSettingsModalOpen(false);
+    clearError();
   };
 
   const opponent = useMemo(() => {
@@ -149,28 +157,37 @@ const App: React.FC = () => {
     roundSubmissions.roundNumber === currentRoundNumber &&
     Boolean(roundSubmissions.playerIds[opponent.id]);
 
+  const leaveToLanding = () => {
+    leaveLobby();
+    setCurrentScreen('landing');
+  };
 
-  return (
-    <>
-      {currentScreen === 'landing' ? (
+  const renderMainScreen = () => {
+    if (currentScreen === 'landing') {
+      return (
         <LandingPage
           onHostGame={handleLandingHostGame}
           onJoinGame={handleLandingJoinGame}
-          serverError={error}
+          serverError={hostSettingsModalOpen ? null : error}
           onClearError={clearError}
         />
-      ) : inLobby && lobby ? (
+      );
+    }
+
+    if (inLobby && lobby) {
+      return (
         <LobbyPage
           lobby={lobby}
           localPlayer={localPlayer}
           onReadyToggle={handleReadyToggle}
           onStartDuel={startDuel}
-          onLeaveLobby={() => {
-            leaveLobby();
-            setCurrentScreen('landing');
-          }}
+          onLeaveLobby={leaveToLanding}
         />
-      ) : inDuel && duel ? (
+      );
+    }
+
+    if (inDuel && duel) {
+      return (
         <GamePage
           duel={duel}
           localPlayer={localPlayer}
@@ -189,13 +206,10 @@ const App: React.FC = () => {
             if (!prompt) {
               return;
             }
-            // Ensure input is focused
             if (inputRef.current && document.activeElement !== inputRef.current) {
               inputRef.current.focus();
             }
-            // Handle Enter: submit if not mid-composition
             if (event.key === 'Enter') {
-              // Skip if in IME composition mode
               if (event.nativeEvent.isComposing) return;
               event.preventDefault();
               event.stopPropagation();
@@ -203,34 +217,47 @@ const App: React.FC = () => {
             }
           }}
           inputRef={inputRef}
-          onLeaveDuel={() => {
-            leaveLobby();
-            setCurrentScreen('landing');
-          }}
+          onLeaveDuel={leaveToLanding}
         />
-      ) : (
-        <EntryPage
-          error={error}
-          onClearError={clearError}
-          showEntryForm={!lobby}
-          playerName={playerName}
-          onPlayerNameChange={setPlayerName}
-          roomCodeInput={roomCodeInput}
-          onRoomCodeChange={setRoomCodeInput}
-          onOpenHostSettings={handleOpenHostSettings}
-          onJoin={handleJoin}
-          entryDisabled={status !== 'connected'}
-        />
-      )}
+      );
+    }
 
-      {/* shared host settings modal, works on landing + game */}
+    if (lobby) {
+      return (
+        <LobbyPage
+          lobby={lobby}
+          localPlayer={localPlayer}
+          onReadyToggle={handleReadyToggle}
+          onStartDuel={startDuel}
+          onLeaveLobby={leaveToLanding}
+        />
+      );
+    }
+
+    return (
+      <LandingPage
+        onHostGame={handleLandingHostGame}
+        onJoinGame={handleLandingJoinGame}
+        serverError={error}
+        onClearError={clearError}
+      />
+    );
+  };
+
+  return (
+    <>
+      {renderMainScreen()}
+
       <HostSettingsModal
         open={hostSettingsModalOpen && !lobby}
         settings={hostSettings}
         onChange={handleHostSettingsChange}
-        onCancel={() => setHostSettingsModalOpen(false)}
+        onCancel={handleCancelHostSettings}
         onConfirm={handleConfirmHostSettings}
         confirmDisabled={!hostSettingsReadyForConfirm}
+        isCreating={isCreatePending}
+        error={hostSettingsModalOpen ? error : null}
+        onClearError={clearError}
       />
 
       {summary && (
@@ -243,8 +270,6 @@ const App: React.FC = () => {
       )}
     </>
   );
-
 };
 
 export default App;
-

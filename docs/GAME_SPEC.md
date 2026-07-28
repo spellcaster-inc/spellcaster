@@ -94,10 +94,9 @@ End
 
 1. Landing: nickname (max 12, uppercased), wizard, **Host Game**.
 2. Host Settings modal: difficulty / rounds / speed / optional CSV.
-3. Confirm → `lobby:create` and client forces `currentScreen = 'game'`.
-4. Until `lobby:state` arrives, App may render **EntryPage fallback** (race).
-5. Lobby shows room code, players, settings summary, ready/start.
-6. After both ready, host starts → `duel:started` → Game page.
+3. Confirm → `lobby:create` with `requestId`; modal stays open with **Creating…** until matching `lobby:createResult` (or `lobby:state`). Timeout after 10s cancels that attempt.
+4. Lobby shows room code, players, settings summary, ready/start.
+5. After both ready, host starts → `duel:started` → Game page.
 
 ### Join path (Confirmed)
 
@@ -105,11 +104,11 @@ End
 2. Screen stays on landing until `lobby:state` or error.
 3. Same lobby/duel flow as host (cannot start; cannot change settings via UI).
 
-### Post-game (Confirmed with race)
+### Post-game (Confirmed)
 
-1. Server emits `duel:completed`, then resets lobby to `phase: 'lobby'` and broadcasts `lobby:state`.
-2. Between those client handler updates, App can briefly show EntryPage (`phase === 'in-duel'` but `duel === null`).
-3. After both events: Lobby + summary overlay. “Return to Lobby” clears the overlay only.
+1. Server emits `duel:completed`, then resets lobby to `phase: 'lobby'` and broadcasts `lobby:state` (same turn).
+2. Client batches both updates → Lobby under Victory/Defeat summary.
+3. “Return to Lobby” clears the overlay only.
 
 ## 4. Game creation and joining
 
@@ -226,8 +225,7 @@ Server emits Socket.IO `error` with `{ message }` for validation failures (bad n
 Client surfaces:
 
 - Landing join: inline error
-- EntryPage: dismissible banner
-- Host settings: confirm disabled when disconnected / invalid custom set
+- Host settings modal: create errors + **Creating…** state; confirm disabled when disconnected / invalid custom / creating
 - Landing Host/Join: **not** disabled when disconnected (**Confirmed gap**)
 
 ## 10. Disconnections and reconnections
@@ -246,7 +244,7 @@ Client surfaces:
 | Item | Evidence |
 |------|----------|
 | `lobby:updateSettings` unused by client | Typed + server-handled; never emitted from UI |
-| EntryPage / EntryForm | Legacy fallback; primary UX is Landing |
+| EntryPage / EntryForm | **Removed** — fallback is Lobby if `lobby` exists, else Landing |
 | On-screen keyboard non-interactive | Highlight only |
 | `scores` / `sendPing` / `lastPong` unused in App | Hook/API residue |
 | `readingSpeed` ignored for catalog MP3 rate | Only TTS uses it |

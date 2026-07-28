@@ -23,6 +23,7 @@ const VALID_DIFFICULTIES: SpellDifficulty[] = ['easy', 'medium', 'hard', 'custom
 const VALID_SPEEDS: ReadingSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const MAX_CUSTOM_WORDS = 400;
 const MAX_CUSTOM_WORD_LENGTH = 64;
+const MAX_CREATE_REQUEST_ID_LENGTH = 64;
 
 const lobbies = new Map<string, LobbyState>();
 
@@ -47,10 +48,19 @@ export function registerSocketHandlers(
         });
       });
 
-      socket.on('lobby:create', ({ playerName, settings, wizardId }) => {
+      socket.on('lobby:create', ({ playerName, settings, wizardId, requestId }) => {
+        const id = sanitizeRequestId(requestId);
+        if (!id) {
+          return sendError(socket, 'invalid create request');
+        }
+
         const cleanName = sanitizeName(playerName);
         if (!cleanName) {
-          return sendError(socket, 'please enter a name before creating a duel');
+          return socket.emit('lobby:createResult', {
+            requestId: id,
+            ok: false,
+            message: 'please enter a name before creating a duel',
+          });
         }
 
         leaveCurrentLobby(socket, io, duelManager);
@@ -80,6 +90,7 @@ export function registerSocketHandlers(
 
         console.log(`created lobby ${roomCode} for host ${cleanName}`);
         broadcastLobbyState(io, lobby);
+        socket.emit('lobby:createResult', { requestId: id, ok: true, lobby });
       });
 
       socket.on('lobby:join', ({ roomCode, playerName, wizardId }) => {
@@ -304,6 +315,17 @@ function leaveCurrentLobby(
 
 function sanitizeName(name: string): string {
   return name?.trim().slice(0, 24);
+}
+
+function sanitizeRequestId(requestId: unknown): string | null {
+  if (typeof requestId !== 'string') {
+    return null;
+  }
+  const trimmed = requestId.trim();
+  if (!trimmed || trimmed.length > MAX_CREATE_REQUEST_ID_LENGTH) {
+    return null;
+  }
+  return trimmed;
 }
 
 function sanitizeSettings(partial: Partial<GameSettings>, current: GameSettings): GameSettings {
