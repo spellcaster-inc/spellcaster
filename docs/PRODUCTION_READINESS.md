@@ -22,8 +22,8 @@ CI workflow (`.github/workflows/ci.yml`) mirrors client/server install+build onl
 
 | ID | Bug | Evidence |
 |----|-----|----------|
-| B1 | **Post-duel EntryPage flash** | `duel:completed` clears `duel` while lobby may still be `in-duel` until `lobby:state` reset arrives (`useLobby.ts` completed handler + `App.tsx` screen conditions). Users can briefly (or longer under lag) see EntryPage under the summary. |
-| B2 | **Host create forces game screen before lobby exists** | `handleConfirmHostSettings` sets `currentScreen` to `'game'` immediately (`App.tsx`), so EntryPage shows until `lobby:state`. Join path correctly waits. |
+| B1 | **Post-duel EntryPage flash** | **Not confirmed visible.** Server emits `duel:completed` + `lobby:state` back-to-back; React batches → Lobby under summary in normal play. EntryPage removed from App (2026-07); remaining risk was theoretical only. |
+| B2 | **Host create forces game screen before lobby exists** | **Fixed (2026-07).** Host stays on Landing with Host Settings modal **Creating…** until `lobby:state`; EntryPage deleted. |
 | B3 | **No reconnect / seat reclaim** | Disconnect → `leaveCurrentLobby` (forfeit if in duel). New `socket.id` cannot reclaim player slot. Client clears `socketId` on disconnect → `localPlayer` null. |
 | B4 | **Room code normalize inconsistency** | `lobby:join` / `duel:submitSpell` normalize codes; `lobby:setReady`, `lobby:updateSettings`, `lobby:startDuel` look up raw `roomCode`. Lowercase codes can fail those ops. |
 | B5 | **Speed bonus ignores accuracy** | `computeRoundScore` always adds `computeSpeedBonus(durationMs)` (`scoring.ts`). Instant wrong/empty guess still earns up to +20. |
@@ -138,8 +138,6 @@ Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay
 
 - Mid-lobby settings UI absent despite server support
 - How to Play under-explains scoring, timeouts, forfeit
-- Rematch UX depends on lobby reset race (B1)
-- EntryPage legacy path still reachable
 - Empty `easy 2` / `medium 2` audio directories clutter public assets
 
 ## 12. What looks healthy

@@ -114,11 +114,20 @@ export interface ServerErrorPayload {
   message: string;
 }
 
+export type LobbyCreateResultPayload =
+  | { requestId: string; ok: true; lobby: LobbyState }
+  | { requestId: string; ok: false; message: string };
+
 // types that describe the events client can send to server
 export interface ClientToServerEvents {
   // simple ping event for testing round-trip
   ping: () => void;
-  'lobby:create': (payload: { playerName: string; settings?: Partial<GameSettings>; wizardId?: string }) => void;
+  'lobby:create': (payload: {
+    playerName: string;
+    settings?: Partial<GameSettings>;
+    wizardId?: string;
+    requestId: string;
+  }) => void;
   'lobby:join': (payload: { roomCode: string; playerName: string; wizardId?: string }) => void;
   'lobby:leave': () => void;
   'lobby:setReady': (payload: { roomCode: string; ready: boolean }) => void;
@@ -137,6 +146,7 @@ export interface ServerToClientEvents {
   // server replies to ping with a pong and some metadata
   pong: (data: { timestamp: string }) => void;
   'lobby:state': (state: LobbyState) => void;
+  'lobby:createResult': (payload: LobbyCreateResultPayload) => void;
   'duel:started': (state: DuelState) => void;
   'duel:countdown': (payload: CountdownPayload) => void;
   'duel:prompt': (payload: SpellPromptPayload) => void;

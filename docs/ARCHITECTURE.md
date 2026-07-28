@@ -36,6 +36,8 @@ No root `package.json`. Client and server are independent npm packages that both
 
 ## 2. Responsibilities
 
+
+
 ### Frontend (`client`)
 
 - Render landing / lobby / duel UI
@@ -64,44 +66,61 @@ Compile-time TypeScript contracts for Socket.IO events and payloads. Runtime JS 
 
 ## 3. Important modules
 
+
+
 ### Client pages
 
-| File | Role |
-|------|------|
+
+| File              | Role                                          |
+| ----------------- | --------------------------------------------- |
 | `LandingPage.tsx` | Primary entry: host/join, wizard, how-to-play |
-| `LobbyPage.tsx` | Room code, players, ready/start |
-| `GamePage.tsx` | Countdown, casting UI, recap, beam |
-| `EntryPage.tsx` | Legacy fallback when `currentScreen==='game'` but lobby/duel UI does not apply |
+| `LobbyPage.tsx`   | Room code, players, ready/start               |
+| `GamePage.tsx`    | Countdown, casting UI, recap, beam            |
+
+
+
 
 ### Client hooks
 
-| Hook | Role |
-|------|------|
-| `useSocketConnection` | Connection status + unused ping helper |
-| `useLobby` | All lobby/duel socket listeners and emitters |
-| `useCountdownTimer` | Local tick from server countdown payload |
-| `useSpellAudio` | Prompt playback + cast/victory/loss SFX |
-| `useSpellInput` | Guess state, keyboard handlers, submit |
+
+| Hook                  | Role                                         |
+| --------------------- | -------------------------------------------- |
+| `useSocketConnection` | Connection status + unused ping helper       |
+| `useLobby`            | All lobby/duel socket listeners and emitters |
+| `useCountdownTimer`   | Local tick from server countdown payload     |
+| `useSpellAudio`       | Prompt playback + cast/victory/loss SFX      |
+| `useSpellInput`       | Guess state, keyboard handlers, submit       |
+
+
+
 
 ### Client libs
 
-| File | Role |
-|------|------|
-| `lib/config.ts` | `VITE_SERVER_URL` → `SERVER_URL` |
-| `lib/socket.ts` | Singleton `io(SERVER_URL, { withCredentials: true })` |
-| `lib/constants.ts` | Default game settings |
+
+| File               | Role                                                  |
+| ------------------ | ----------------------------------------------------- |
+| `lib/config.ts`    | `VITE_SERVER_URL` → `SERVER_URL`                      |
+| `lib/socket.ts`    | Singleton `io(SERVER_URL, { withCredentials: true })` |
+| `lib/constants.ts` | Default game settings                                 |
+
+
+
 
 ### Server modules
 
-| File | Role |
-|------|------|
-| `src/index.ts` | Express, CORS, `/health`, Socket.IO server |
-| `src/sockets/index.ts` | Lobby Map, create/join/ready/settings/start/submit/leave |
-| `src/game/duelManager.ts` | Active duels, timers, prompts, completion |
-| `src/game/spells.ts` | Catalog load, queue shuffle, audio URLs |
-| `src/game/spellAudio.ts` | Manifest path resolution + lookup Map |
-| `src/game/scoring.ts` | Levenshtein, accuracy, speed bonus |
-| `src/game/spellCatalog.json` | Spell word lists by difficulty |
+
+| File                         | Role                                                     |
+| ---------------------------- | -------------------------------------------------------- |
+| `src/index.ts`               | Express, CORS, `/health`, Socket.IO server               |
+| `src/sockets/index.ts`       | Lobby Map, create/join/ready/settings/start/submit/leave |
+| `src/game/duelManager.ts`    | Active duels, timers, prompts, completion                |
+| `src/game/spells.ts`         | Catalog load, queue shuffle, audio URLs                  |
+| `src/game/spellAudio.ts`     | Manifest path resolution + lookup Map                    |
+| `src/game/scoring.ts`        | Levenshtein, accuracy, speed bonus                       |
+| `src/game/spellCatalog.json` | Spell word lists by difficulty                           |
+
+
+
 
 ## 4. Screen / route model
 
@@ -112,8 +131,11 @@ currentScreen === 'landing'     → LandingPage
 else lobby.phase === 'lobby'    → LobbyPage
 else lobby.phase === 'in-duel'
      && duel                    → GamePage
-else                            → EntryPage (fallback)
+else if lobby                   → LobbyPage
+else                            → LandingPage
 ```
+
+Host create keeps Landing + `HostSettingsModal` open (**Creating…**) until a matching `lobby:createResult` (and/or `lobby:state`) arrives. Each create includes a client `requestId`; late results for cancelled/timed-out ids are ignored. A 10s client timeout calls `cancelPendingCreate` (leave + ignore bare `lobby:state` until the next create/join).
 
 Overlays: `HostSettingsModal`, `GameSummaryCard`.
 
@@ -123,30 +145,39 @@ Types: `shared/types/socket.ts`.
 
 ### Client → server
 
-| Event | Payload | Server behavior |
-|-------|---------|-----------------|
-| `ping` | none | Emit `pong` with ISO timestamp |
-| `lobby:create` | `{ playerName, settings?, wizardId? }` | Create room, host joins, broadcast `lobby:state` |
-| `lobby:join` | `{ roomCode, playerName, wizardId? }` | Validate + add player |
-| `lobby:leave` | none | Remove from lobby / forfeit if in duel |
-| `lobby:setReady` | `{ roomCode, ready }` | Toggle ready (lobby phase) |
-| `lobby:updateSettings` | `{ roomCode, settings }` | Host-only; resets ready flags |
-| `lobby:startDuel` | `{ roomCode }` | Host-only; both ready → start DuelManager |
-| `duel:submitSpell` | `{ roomCode, promptId, guess, durationMs }` | Grade path; client duration ignored |
+
+| Event                  | Payload                                     | Server behavior                                  |
+| ---------------------- | ------------------------------------------- | ------------------------------------------------ |
+| `ping`                 | none                                        | Emit `pong` with ISO timestamp                   |
+| `lobby:create`         | `{ playerName, settings?, wizardId?, requestId }` | Create room; reply `lobby:createResult`; also broadcast `lobby:state` |
+| `lobby:join`           | `{ roomCode, playerName, wizardId? }`             | Validate + add player                                                  |
+| `lobby:leave`          | none                                        | Remove from lobby / forfeit if in duel           |
+| `lobby:setReady`       | `{ roomCode, ready }`                       | Toggle ready (lobby phase)                       |
+| `lobby:updateSettings` | `{ roomCode, settings }`                    | Host-only; resets ready flags                    |
+| `lobby:startDuel`      | `{ roomCode }`                              | Host-only; both ready → start DuelManager        |
+| `duel:submitSpell`     | `{ roomCode, promptId, guess, durationMs }` | Grade path; client duration ignored              |
+
+
+
 
 ### Server → client
 
-| Event | Payload | Meaning |
-|-------|---------|---------|
-| `pong` | `{ timestamp }` | Ping reply |
-| `lobby:state` | `LobbyState` | Full lobby snapshot |
-| `duel:started` | `DuelState` | Duel begins |
-| `duel:countdown` | `{ roundNumber, totalRounds, seconds, readingSpeed }` | Pre-prompt countdown |
-| `duel:prompt` | `CatalogSpellPromptPayload \| CustomSpellPromptPayload` | Spell to answer |
-| `duel:playerSubmitted` | `{ roomCode, roundNumber, playerId }` | Opponent/self submitted |
-| `duel:roundRecap` | `RoundRecapPayload` | Answers + scores + beam |
-| `duel:completed` | `GameSummary` | Final results |
-| `error` | `{ message }` | Action rejected |
+
+| Event                  | Payload                                                | Meaning                 |
+| ---------------------- | ------------------------------------------------------ | ----------------------- |
+| `pong`                 | `{ timestamp }`                                        | Ping reply              |
+| `lobby:state`          | `LobbyState`                                           | Full lobby snapshot     |
+| `lobby:createResult`   | `{ requestId, ok: true, lobby } \| { requestId, ok: false, message }` | Create attempt reply |
+| `duel:started`         | `DuelState`                                            | Duel begins             |
+| `duel:countdown`       | `{ roundNumber, totalRounds, seconds, readingSpeed }`  | Pre-prompt countdown    |
+| `duel:prompt`          | `CatalogSpellPromptPayload | CustomSpellPromptPayload` | Spell to answer         |
+| `duel:playerSubmitted` | `{ roomCode, roundNumber, playerId }`                  | Opponent/self submitted |
+| `duel:roundRecap`      | `RoundRecapPayload`                                    | Answers + scores + beam |
+| `duel:completed`       | `GameSummary`                                          | Final results           |
+| `error`                | `{ message }`                                          | Action rejected         |
+
+
+
 
 ### Key payload shapes
 
@@ -161,7 +192,7 @@ LobbyState { roomCode, phase: 'lobby'|'in-duel', players[], settings }
 GameSettings { difficulty, rounds, readingSpeed, customWords?, customWordSourceName? }
 ```
 
-Player identity is **`socket.id`**. `SocketData` may store `roomCode` / `playerName` on the socket.
+Player identity is `socket.id`. `SocketData` may store `roomCode` / `playerName` on the socket.
 
 ## 6. State and data flow
 
@@ -186,6 +217,8 @@ Player identity is **`socket.id`**. `SocketData` may store `roomCode` / `playerN
                                              spellAudioManifest.json
 ```
 
+
+
 ### Lobby Map
 
 - Key: room code
@@ -193,22 +226,30 @@ Player identity is **`socket.id`**. `SocketData` may store `roomCode` / `playerN
 - Deleted when empty
 - Soft-leaks single-player abandoned lobbies until process restart
 
+
+
 ### Duel Map
 
 - Key: room code
 - Value: `ActiveDuel` (queue, scores, beam, in-flight round, timer handles)
 - Deleted on `completeDuel`
 
+
+
 ### Client state ownership
 
-| State | Source of truth |
-|-------|-----------------|
-| Lobby membership / settings / phase | Server via `lobby:state` |
-| Round timing | Server timers; client mirrors countdown |
-| Prompt content | Server `duel:prompt` |
-| Guess text | Client local until submit |
-| Scores / beam | Server; client updates from recap |
-| `localPlayer` | Client: `lobby.players.find(id === socket.id)` |
+
+| State                               | Source of truth                                |
+| ----------------------------------- | ---------------------------------------------- |
+| Lobby membership / settings / phase | Server via `lobby:state`                       |
+| Round timing                        | Server timers; client mirrors countdown        |
+| Prompt content                      | Server `duel:prompt`                           |
+| Guess text                          | Client local until submit                      |
+| Scores / beam                       | Server; client updates from recap              |
+| `localPlayer`                       | Client: `lobby.players.find(id === socket.id)` |
+
+
+
 
 ## 7. Audio architecture
 
@@ -221,6 +262,8 @@ See also [AUDIO.md](AUDIO.md).
 3. Queue entries get `audioUrl` (manifest or deterministic fallback).
 4. Prompt emits relative URL like `/audio/spells/easy/e001.mp3`.
 5. Client plays against the **frontend origin** (Vite/`public`), not `VITE_SERVER_URL`.
+
+
 
 ### Custom path
 
@@ -239,50 +282,66 @@ Requires `ELEVENLABS_API_KEY`. Skips existing files. **Append-only** catalog rul
 
 ## 8. Security and anti-cheat
 
+
+
 ### Present
 
-| Control | Detail |
-|---------|--------|
-| CORS allowlist | `CLIENT_ORIGIN` for HTTP + Socket.IO |
-| Name/settings sanitization | Length limits, enum allowlists, custom-word caps |
-| Guess length cap | 64 chars, uppercased |
-| Catalog answer concealment | No `spellText` in catalog prompts |
-| Opaque audio filenames | `e001.mp3` style, not spell-named |
-| Server-only manifest | Client must not import mapping JSON |
-| Server-authoritative duration | Client `durationMs` logged, not used |
-| Server-authoritative scoring | Client cannot set scores/beam |
+
+| Control                       | Detail                                           |
+| ----------------------------- | ------------------------------------------------ |
+| CORS allowlist                | `CLIENT_ORIGIN` for HTTP + Socket.IO             |
+| Name/settings sanitization    | Length limits, enum allowlists, custom-word caps |
+| Guess length cap              | 64 chars, uppercased                             |
+| Catalog answer concealment    | No `spellText` in catalog prompts                |
+| Opaque audio filenames        | `e001.mp3` style, not spell-named                |
+| Server-only manifest          | Client must not import mapping JSON              |
+| Server-authoritative duration | Client `durationMs` logged, not used             |
+| Server-authoritative scoring  | Client cannot set scores/beam                    |
+
+
+
 
 ### Absent / weak
 
-| Gap | Detail |
-|-----|--------|
-| Authentication | None |
-| Rate limiting | None |
-| Payload schema validation | TS types only; runtime destructuring can throw |
-| `wizardId` validation | Pass-through string |
-| Room-code normalize consistency | Some handlers use raw `roomCode` |
-| Speed bonus without accuracy | Fast garbage still scores bonus |
-| Public MP3 scraping | Determined users can map audio over time |
-| Custom mode leak | `spellText` intentionally sent for TTS |
-| Multi-instance safety | In-memory state only |
+
+| Gap                             | Detail                                         |
+| ------------------------------- | ---------------------------------------------- |
+| Authentication                  | None                                           |
+| Rate limiting                   | None                                           |
+| Payload schema validation       | TS types only; runtime destructuring can throw |
+| `wizardId` validation           | Pass-through string                            |
+| Room-code normalize consistency | Some handlers use raw `roomCode`               |
+| Speed bonus without accuracy    | Fast garbage still scores bonus                |
+| Public MP3 scraping             | Determined users can map audio over time       |
+| Custom mode leak                | `spellText` intentionally sent for TTS         |
+| Multi-instance safety           | In-memory state only                           |
+
+
+
 
 ## 9. Development and production infrastructure
 
+
+
 ### Local
 
-| Process | Command | Default URL |
-|---------|---------|-------------|
+
+| Process     | Command                    | Default URL             |
+| ----------- | -------------------------- | ----------------------- |
 | Client Vite | `cd client && npm run dev` | `http://localhost:5173` |
-| Server | `cd server && npm run dev` | `http://localhost:4000` |
+| Server      | `cd server && npm run dev` | `http://localhost:4000` |
+
 
 Vite allows importing `../shared` via `server.fs.allow`.
 
 ### Build outputs
 
-| Package | Output | Start |
-|---------|--------|-------|
-| Client | `client/dist/` (+ copied `public/`) | Static host / `npm run preview` |
-| Server | `server/dist/server/src/...` and `server/dist/shared/...` | `npm start` → `node dist/server/src/index.js` |
+
+| Package | Output                                                    | Start                                         |
+| ------- | --------------------------------------------------------- | --------------------------------------------- |
+| Client  | `client/dist/` (+ copied `public/`)                       | Static host / `npm run preview`               |
+| Server  | `server/dist/server/src/...` and `server/dist/shared/...` | `npm start` → `node dist/server/src/index.js` |
+
 
 Server `tsconfig` sets `rootDir` to the repo parent of `server/`, producing the nested `dist/server/src` layout.
 
@@ -306,3 +365,4 @@ No test, lint, or type-check-only job beyond what `build` embeds (`client` build
 - Logging/metrics/APM
 - Staging environment definitions
 - Database / Redis / pub-sub for multi-instance Socket.IO
+

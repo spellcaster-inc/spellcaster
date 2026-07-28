@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getSocket } from '../lib/socket';
 import type {
   CountdownPayload,
   DuelState,
   GameSettings,
   GameSummary,
+  LobbyCreateResultPayload,
   LobbyState,
   Player,
   PlayerSubmissionPayload,
@@ -24,7 +25,9 @@ interface UseLobbyResult {
   roundSubmissions: { roundNumber: number; playerIds: Record<string, boolean> } | null;
   error: string | null;
   localPlayer: Player | null;
+  isCreatePending: boolean;
   createLobby: (playerName: string, settings?: GameSettings, wizardId?: string) => void;
+  cancelPendingCreate: (message?: string) => void;
   joinLobby: (roomCode: string, playerName: string, wizardId?: string) => void;
   leaveLobby: () => void;
   setReady: (ready: boolean) => void;
@@ -48,13 +51,50 @@ export function useLobby(): UseLobbyResult {
     roundNumber: number;
     playerIds: Record<string, boolean>;
   } | null>(null);
+  const [isCreatePending, setIsCreatePending] = useState(false);
+
+  const pendingCreateRequestIdRef = useRef<string | null>(null);
+  const lastCreateRequestIdRef = useRef<string | null>(null);
+  const cancelledCreateRequestIdRef = useRef<string | null>(null);
+  const ignoreLobbyStateRef = useRef(false);
 
   useEffect(() => {
     const socket = getSocket();
 
     const handleLobbyState = (state: LobbyState) => {
+      if (ignoreLobbyStateRef.current) {
+        return;
+      }
       setLobby(state);
       if (state.phase !== 'in-duel') {
+        setDuel(null);
+      }
+      // In-flight create already synced via lobby:state — clear pending so a later timeout won't leave.
+      if (pendingCreateRequestIdRef.current) {
+        pendingCreateRequestIdRef.current = null;
+        setIsCreatePending(false);
+      }
+    };
+
+    const handleCreateResult = (payload: LobbyCreateResultPayload) => {
+      if (payload.requestId !== lastCreateRequestIdRef.current) {
+        return;
+      }
+      if (payload.requestId === cancelledCreateRequestIdRef.current) {
+        return;
+      }
+
+      pendingCreateRequestIdRef.current = null;
+      setIsCreatePending(false);
+      ignoreLobbyStateRef.current = false;
+
+      if (!payload.ok) {
+        setError(payload.message);
+        return;
+      }
+
+      setLobby(payload.lobby);
+      if (payload.lobby.phase !== 'in-duel') {
         setDuel(null);
       }
     };
@@ -84,9 +124,9 @@ export function useLobby(): UseLobbyResult {
       setDuel((prev) =>
         prev
           ? {
-            ...prev,
-            round: payload.roundNumber,
-          }
+              ...prev,
+              round: payload.roundNumber,
+            }
           : prev
       );
     };
@@ -99,16 +139,16 @@ export function useLobby(): UseLobbyResult {
         prev && prev.roundNumber === payload.roundNumber
           ? prev
           : {
-            roundNumber: payload.roundNumber,
-            playerIds: {},
-          }
+              roundNumber: payload.roundNumber,
+              playerIds: {},
+            }
       );
       setDuel((prev) =>
         prev
           ? {
-            ...prev,
-            round: payload.roundNumber,
-          }
+              ...prev,
+              round: payload.roundNumber,
+            }
           : prev
       );
     };
@@ -134,12 +174,17 @@ export function useLobby(): UseLobbyResult {
       setDuel((prev) => {
         const updated = prev
           ? {
-            ...prev,
-            beamOffset: payload.beamOffset,
-            round: payload.roundNumber,
-          }
+              ...prev,
+              beamOffset: payload.beamOffset,
+              round: payload.roundNumber,
+            }
           : prev;
-        console.log('📊 beamOffset from server:', payload.beamOffset, 'scores:', payload.playerResults.map(p => p.totalScore));
+        console.log(
+          '📊 beamOffset from server:',
+          payload.beamOffset,
+          'scores:',
+          payload.playerResults.map((p) => p.totalScore)
+        );
         console.log('🎯 duel.beamOffset after update:', updated?.beamOffset);
         return updated;
       });
@@ -163,6 +208,10 @@ export function useLobby(): UseLobbyResult {
     const handleError = (payload: ServerErrorPayload) => {
       console.error('[socket error]', payload.message);
       setError(payload.message);
+      if (pendingCreateRequestIdRef.current) {
+        pendingCreateRequestIdRef.current = null;
+        setIsCreatePending(false);
+      }
     };
 
     const handleConnect = () => {
@@ -173,11 +222,6 @@ export function useLobby(): UseLobbyResult {
       setSocketId(null);
     };
 
-    socket.on('lobby:state', handleLobbyState);
-    socket.on('duel:started', handleDuelStarted);
-    socket.on('duel:countdown', handleCountdown);
-    socket.on('duel:prompt', handlePrompt);
-    socket.on('duel:roundRecap', handleRoundRecap);
     const handlePlayerSubmitted = (payload: PlayerSubmissionPayload) => {
       setRoundSubmissions((prev) => {
         if (!prev || prev.roundNumber !== payload.roundNumber) {
@@ -198,6 +242,13 @@ export function useLobby(): UseLobbyResult {
         };
       });
     };
+
+    socket.on('lobby:state', handleLobbyState);
+    socket.on('lobby:createResult', handleCreateResult);
+    socket.on('duel:started', handleDuelStarted);
+    socket.on('duel:countdown', handleCountdown);
+    socket.on('duel:prompt', handlePrompt);
+    socket.on('duel:roundRecap', handleRoundRecap);
     socket.on('duel:playerSubmitted', handlePlayerSubmitted);
     socket.on('duel:completed', handleCompleted);
     socket.on('error', handleError);
@@ -210,6 +261,7 @@ export function useLobby(): UseLobbyResult {
 
     return () => {
       socket.off('lobby:state', handleLobbyState);
+      socket.off('lobby:createResult', handleCreateResult);
       socket.off('duel:started', handleDuelStarted);
       socket.off('duel:countdown', handleCountdown);
       socket.off('duel:prompt', handlePrompt);
@@ -230,31 +282,7 @@ export function useLobby(): UseLobbyResult {
     return lobby.players.find((player) => player.id === socketId) ?? null;
   }, [socketId, lobby]);
 
-  const socketRef = () => getSocket();
-
-  const createLobby = (playerName: string, settings?: GameSettings, wizardId?: string) => {
-    const name = playerName.trim();
-    if (!name) {
-      setError('please enter your name first');
-      return;
-    }
-    setError(null);
-    socketRef().emit('lobby:create', { playerName: name, settings, wizardId });
-  };
-
-  const joinLobby = (roomCode: string, playerName: string, wizardId?: string) => {
-    const name = playerName.trim();
-    const code = roomCode.trim().toUpperCase();
-    if (!name || !code) {
-      setError('enter both your name and a room code');
-      return;
-    }
-    setError(null);
-    socketRef().emit('lobby:join', { roomCode: code, playerName: name, wizardId });
-  };
-
-  const leaveLobby = () => {
-    socketRef().emit('lobby:leave');
+  const clearLocalLobbyState = useCallback(() => {
     setLobby(null);
     setDuel(null);
     setCountdown(null);
@@ -263,37 +291,96 @@ export function useLobby(): UseLobbyResult {
     setSummary(null);
     setScores({});
     setRoundSubmissions(null);
-  };
+  }, []);
 
-  const setReady = (ready: boolean) => {
+  const createLobby = useCallback((playerName: string, settings?: GameSettings, wizardId?: string) => {
+    const name = playerName.trim();
+    if (!name) {
+      setError('please enter your name first');
+      return;
+    }
+    const requestId = crypto.randomUUID();
+    pendingCreateRequestIdRef.current = requestId;
+    lastCreateRequestIdRef.current = requestId;
+    cancelledCreateRequestIdRef.current = null;
+    ignoreLobbyStateRef.current = false;
+    setIsCreatePending(true);
+    setError(null);
+    getSocket().emit('lobby:create', { playerName: name, settings, wizardId, requestId });
+  }, []);
+
+  const cancelPendingCreate = useCallback((message?: string) => {
+    const pendingId = pendingCreateRequestIdRef.current;
+    if (!pendingId) {
+      return;
+    }
+    cancelledCreateRequestIdRef.current = pendingId;
+    pendingCreateRequestIdRef.current = null;
+    setIsCreatePending(false);
+    ignoreLobbyStateRef.current = true;
+    getSocket().emit('lobby:leave');
+    clearLocalLobbyState();
+    if (message) {
+      setError(message);
+    }
+  }, [clearLocalLobbyState]);
+
+  const joinLobby = useCallback((roomCode: string, playerName: string, wizardId?: string) => {
+    const name = playerName.trim();
+    const code = roomCode.trim().toUpperCase();
+    if (!name || !code) {
+      setError('enter both your name and a room code');
+      return;
+    }
+    ignoreLobbyStateRef.current = false;
+    pendingCreateRequestIdRef.current = null;
+    setIsCreatePending(false);
+    setError(null);
+    getSocket().emit('lobby:join', { roomCode: code, playerName: name, wizardId });
+  }, []);
+
+  const leaveLobby = useCallback(() => {
+    pendingCreateRequestIdRef.current = null;
+    setIsCreatePending(false);
+    getSocket().emit('lobby:leave');
+    clearLocalLobbyState();
+  }, [clearLocalLobbyState]);
+
+  const setReady = useCallback(
+    (ready: boolean) => {
+      if (!lobby) {
+        return;
+      }
+      getSocket().emit('lobby:setReady', { roomCode: lobby.roomCode, ready });
+    },
+    [lobby]
+  );
+
+  const startDuel = useCallback(() => {
     if (!lobby) {
       return;
     }
-    socketRef().emit('lobby:setReady', { roomCode: lobby.roomCode, ready });
-  };
+    getSocket().emit('lobby:startDuel', { roomCode: lobby.roomCode });
+  }, [lobby]);
 
-  const startDuel = () => {
-    if (!lobby) {
-      return;
-    }
-    socketRef().emit('lobby:startDuel', { roomCode: lobby.roomCode });
-  };
+  const submitSpell = useCallback(
+    (guess: string, durationMs: number, promptId: string) => {
+      if (!lobby || !promptId) {
+        return;
+      }
+      const guessToSubmit = guess.trim().toUpperCase();
+      getSocket().emit('duel:submitSpell', {
+        roomCode: lobby.roomCode,
+        promptId,
+        guess: guessToSubmit,
+        durationMs,
+      });
+    },
+    [lobby]
+  );
 
-  const submitSpell = (guess: string, durationMs: number, promptId: string) => {
-    if (!lobby || !promptId) {
-      return;
-    }
-    const guessToSubmit = guess.trim().toUpperCase();
-    socketRef().emit('duel:submitSpell', {
-      roomCode: lobby.roomCode,
-      promptId,
-      guess: guessToSubmit,
-      durationMs,
-    });
-  };
-
-  const clearError = () => setError(null);
-  const resetSummary = () => setSummary(null);
+  const clearError = useCallback(() => setError(null), []);
+  const resetSummary = useCallback(() => setSummary(null), []);
 
   return {
     lobby,
@@ -306,7 +393,9 @@ export function useLobby(): UseLobbyResult {
     roundSubmissions,
     error,
     localPlayer,
+    isCreatePending,
     createLobby,
+    cancelPendingCreate,
     joinLobby,
     leaveLobby,
     setReady,
@@ -316,4 +405,3 @@ export function useLobby(): UseLobbyResult {
     resetSummary,
   };
 }
-
