@@ -60,7 +60,14 @@ Ensure `cwd` can resolve `server/data/spellAudioManifest.json` (typically run fr
 
 ### Lint / test
 
-No lint or test scripts are configured yet. Do not claim lint/test passed unless you add and run them. Follow `docs/RELEASE_PLAN.md` tasks H3/H6 when adding them.
+Beam regression tests are configured with Vitest:
+
+```bash
+cd client && npm test
+cd server && npm test
+```
+
+No lint script is configured yet. Do not claim lint passed unless you add and run one. Follow `docs/RELEASE_PLAN.md` tasks H3/H6 when expanding test or lint coverage.
 
 ### Regenerate spell audio (manual, not CI)
 

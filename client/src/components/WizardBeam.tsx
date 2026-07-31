@@ -8,6 +8,7 @@ import wizardGreen from '../assets/spellcaster-wizards/wizard-green.png';
 import wizardOrange from '../assets/spellcaster-wizards/wizard-orange.png';
 import wizardGrey from '../assets/spellcaster-wizards/wizard-grey.png';
 import { LightningBeam, type Point } from './LightningBeam';
+import { calculateBeamCollisionPoint } from '../lib/beamGeometry';
 
 const WIZARDS: Wizard[] = [
   {
@@ -252,22 +253,6 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     updateWandPositions();
   }, [leftHopProgress, rightHopProgress, updateWandPositions]);
 
-  const calculateCollisionPoint = useCallback((): Point | null => {
-    if (!leftWandTip || !rightWandTip) {
-      return null;
-    }
-
-    const clampedOffset = Math.max(-100, Math.min(100, displayBeamOffset));
-    const progressFromLeft = (clampedOffset + 100) / 200;
-    const dx = rightWandTip.x - leftWandTip.x;
-    const dy = rightWandTip.y - leftWandTip.y;
-
-    return {
-      x: leftWandTip.x + dx * progressFromLeft,
-      y: leftWandTip.y + dy * progressFromLeft,
-    };
-  }, [leftWandTip, rightWandTip, displayBeamOffset]);
-
   // Update positions on mount, resize, and when wizards change
   useEffect(() => {
     // Use requestAnimationFrame to ensure DOM is ready
@@ -310,7 +295,10 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     };
   }, [leftWizard, rightWizard, leftWizardData, rightWizardData, updateWandPositions]);
 
-  const collisionPoint = calculateCollisionPoint();
+  const collisionPoint =
+    leftWandTip && rightWandTip
+      ? calculateBeamCollisionPoint(leftWandTip, rightWandTip, displayBeamOffset)
+      : null;
   
   // Determine if beams should be active (during duel, when both wizards are present and we have positions)
   const beamsActive = Boolean(

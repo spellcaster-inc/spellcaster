@@ -13,10 +13,10 @@ Commands run from the repo on 2026-07-16:
 | Client build | `cd client && npm run build` | **PASS** (exit 0); Vite built successfully. Warnings: outdated `baseline-browser-mapping` / `caniuse-lite` browserslist data |
 | Server build | `cd server && npm run build` | **PASS** (exit 0) |
 | Lint | — | **N/A** — no ESLint/Prettier config or npm lint scripts |
-| Unit/integration/e2e tests | — | **N/A** — zero `*.test.*` / `*.spec.*` files; no test runner deps |
+| Unit tests | `cd client && npm test`; `cd server && npm test` | Beam normalization and collision geometry regression coverage added (2026-07) |
 | Root install | — | **N/A** — no root `package.json` |
 
-CI workflow (`.github/workflows/ci.yml`) mirrors client/server install+build only. Not re-run against GitHub Actions in this audit.
+CI runs client/server tests and builds on pushes and pull requests. Not re-run against GitHub Actions in this audit.
 
 ## 2. Confirmed bugs
 
@@ -122,7 +122,7 @@ Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay
 
 | Area | Status |
 |------|--------|
-| Unit tests (scoring, sanitize, queue) | Missing |
+| Unit tests | Beam math/geometry covered; scoring, sanitize, and queue coverage still missing |
 | Socket integration tests | Missing |
 | E2E duel happy path | Missing |
 | Load / soak tests | Missing |
