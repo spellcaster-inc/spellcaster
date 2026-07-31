@@ -71,6 +71,17 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Acceptance**     | Speed bonus scales with accuracy (e.g. `bonus * accuracy` or zero below a threshold). Unit tests cover perfect/fast, wrong/fast, empty/timeout cases. Spec updated. |
 
 
+### C6 — Make beam position match cumulative score
+
+
+| Field              | Value                                                                                                                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**         | Complete                                                                                                                                                                                              |
+| **Why**            | Raw per-round movement and amplified client geometry could push the collision beyond a wizard, while the visual did not clearly represent the cumulative-score lead.                                |
+| **Affected files** | `server/src/game/duelManager.ts`, `client/src/components/WizardBeam.tsx`, shared socket types, beam documentation                                                                                     |
+| **Acceptance**     | Beam position is derived from the cumulative-score difference; a 280-point lead reaches ±100; both clients render one shared collision point that remains between the wand tips at every valid offset. |
+
+
 ---
 
 
@@ -373,4 +384,3 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 - When starting a task, set status to `In Progress` and link the PR/branch.
 - When done, set `Complete` and update `GAME_SPEC.md` / `ARCHITECTURE.md` / `PRODUCTION_READINESS.md` as needed.
 - Do not mark Complete without meeting the acceptance criterion.
-

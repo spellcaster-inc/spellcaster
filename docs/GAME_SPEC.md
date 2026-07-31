@@ -199,14 +199,17 @@ Round winner: highest round `totalScore`, or `null` on tie.
 
 ## 8. Beam and winners
 
-Beam update (2 players only) (**Confirmed**):
+Beam position (2 players only) (**Confirmed**):
 
 ```
-beamOffset += (player0.totalScore - player1.totalScore) * 0.5
+scoreLead = player0.cumulativeScore - player1.cumulativeScore
+beamOffset = (scoreLead / 280) * 100
 beamOffset clamped to [-100, 100]
 ```
 
-Player order is lobby join order (host typically index 0). Client multiplies offset for visuals.
+Player order is lobby join order (host typically index 0). Positive offsets favor player 0;
+negative offsets favor player 1. The client maps the offset directly onto one shared collision
+point between the two wand tips. A cumulative lead of 280 points reaches the opponent's wand.
 
 ### End reasons (`GameSummary.reason`)
 

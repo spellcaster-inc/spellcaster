@@ -39,10 +39,10 @@ CI workflow (`.github/workflows/ci.yml`) mirrors client/server install+build onl
 |----|-------|------------|
 | L1 | Round timeout overwrite race | After auto-submissions, a late real submit can overwrite without re-triggering `lockRound` if all slots were already filled by autos (`duelManager.ts`). Window is short (~1s recap delay). |
 | L2 | Abandoned 1-player lobbies accumulate | Empty lobbies delete; solo host who never leaves keeps a Map entry forever. Soft memory leak. |
-| L3 | Beam early-win winner by score not beam sign | Normally aligned for 2 players; any future asymmetry would surprise. |
+| L3 | **Fixed (2026-07):** Beam early-win winner by score not beam sign | Beam position is now derived directly from the cumulative-score difference, so its sign and the score leader cannot diverge. |
 | L4 | Landing Host/Join not gated on `connected` | Emits while disconnected; user may see no immediate feedback. |
 | L5 | StrictMode double audio start in dev | Effect cleanup exists; brief double-speak/play possible in React 18 StrictMode. |
-| L6 | Beam visual clamp glitches at high offsets | Client multiplies server offset (`×3.0`); geometry clamps may snap endpoints. |
+| L6 | **Fixed (2026-07):** Beam visual clamp glitches at high offsets | Both beams now share one collision point clamped between the wand tips; the `×3.0` multiplier and asymmetric endpoint fallbacks were removed. |
 | L7 | Manifest miss under unusual `cwd` | `spellAudio.ts` `__dirname` fallbacks do not match `dist/server/src/game`; depends on `cwd` heuristics. |
 | L8 | Malformed socket payloads can throw | No runtime schema; destructuring `undefined` crashes the handler for that event. |
 | L9 | Nickname length mismatch (UI 12 vs server 24) | Confusing limits; not a crash. |

@@ -62,11 +62,9 @@ interface WizardBeamProps {
 }
 
 export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId }: WizardBeamProps) {
-  // Ensure we have both players, with host on left
-  const hostPlayer = players.find(p => p.isHost);
-  const nonHostPlayer = players.find(p => !p.isHost);
-  const leftWizard = hostPlayer ?? players[0];
-  const rightWizard = nonHostPlayer ?? players[1];
+  // Match the server's player order so the signed beam offset maps to consistent sides.
+  const leftWizard = players[0];
+  const rightWizard = players[1];
   
   const [leftHopProgress, setLeftHopProgress] = useState(0);
   const [rightHopProgress, setRightHopProgress] = useState(0);
@@ -136,8 +134,6 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
   }, [displayBeamOffset]);
 
   useEffect(() => {
-    console.log('🔮 WizardBeam received beamOffset prop:', beamOffset, 'current displayBeamOffset:', displayBeamOffset);
-    
     if (beamAnimationRef.current) {
       cancelAnimationFrame(beamAnimationRef.current);
     }
@@ -145,8 +141,6 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     const duration = 450;
     const start = currentOffsetRef.current;
     const delta = beamOffset - start;
-
-    console.log('🎬 Animation: start =', start, 'delta =', delta, 'target =', beamOffset);
 
     if (Math.abs(delta) < 0.01) {
       setDisplayBeamOffset(beamOffset);
@@ -258,58 +252,20 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     updateWandPositions();
   }, [leftHopProgress, rightHopProgress, updateWandPositions]);
 
-  // Calculate beam endpoints - both beams extend the same distance toward the center
-  // This ensures both beams are equal length and meet in the middle
-  const calculateBeamEndpoints = useCallback((): { leftEnd: Point; rightEnd: Point } | null => {
-    if (!leftWandTip || !rightWandTip || !containerRef.current) {
+  const calculateCollisionPoint = useCallback((): Point | null => {
+    if (!leftWandTip || !rightWandTip) {
       return null;
     }
 
-    // Calculate the distance and direction between the two wand tips
+    const clampedOffset = Math.max(-100, Math.min(100, displayBeamOffset));
+    const progressFromLeft = (clampedOffset + 100) / 200;
     const dx = rightWandTip.x - leftWandTip.x;
     const dy = rightWandTip.y - leftWandTip.y;
-    const totalDistance = Math.sqrt(dx * dx + dy * dy);
-    const halfDistance = totalDistance / 2;
 
-    // Normalize beamOffset from [-100, 100] to adjust where beams meet
-    // 0 = center, positive = right wins, negative = left wins
-    const offsetPercent = displayBeamOffset / 100; // -1 to 1
-    // Increased from 0.3 to 3.0 for much more visible beam movement
-    const offsetDistance = (halfDistance * offsetPercent) * 3.0;
-
-    // Both beams extend the same distance toward the center, with slight offset based on beamOffset
-    // Left beam extends from left wand tip toward the center (to the right)
-    const leftEnd: Point = {
-      x: leftWandTip.x + (dx / totalDistance) * (halfDistance + offsetDistance),
-      y: leftWandTip.y + (dy / totalDistance) * (halfDistance + offsetDistance),
+    return {
+      x: leftWandTip.x + dx * progressFromLeft,
+      y: leftWandTip.y + dy * progressFromLeft,
     };
-
-    // Right beam extends from right wand tip toward the center (to the left)
-    const rightEnd: Point = {
-      x: rightWandTip.x - (dx / totalDistance) * (halfDistance - offsetDistance),
-      y: rightWandTip.y - (dy / totalDistance) * (halfDistance - offsetDistance),
-    };
-
-    // Ensure beams extend in the correct direction (left beam goes right, right beam goes left)
-    // Left beam must extend to the right of the left wand tip
-    if (leftEnd.x <= leftWandTip.x) {
-      // If somehow calculated backwards, extend at least halfway
-      const midX = (leftWandTip.x + rightWandTip.x) / 2;
-      const midY = (leftWandTip.y + rightWandTip.y) / 2;
-      leftEnd.x = midX;
-      leftEnd.y = midY;
-    }
-    
-    // Right beam must extend to the left of the right wand tip
-    if (rightEnd.x >= rightWandTip.x) {
-      // If somehow calculated backwards, extend at least halfway
-      const midX = (leftWandTip.x + rightWandTip.x) / 2;
-      const midY = (leftWandTip.y + rightWandTip.y) / 2;
-      rightEnd.x = midX;
-      rightEnd.y = midY;
-    }
-
-    return { leftEnd, rightEnd };
   }, [leftWandTip, rightWandTip, displayBeamOffset]);
 
   // Update positions on mount, resize, and when wizards change
@@ -354,14 +310,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     };
   }, [leftWizard, rightWizard, leftWizardData, rightWizardData, updateWandPositions]);
 
-  // Calculate beam endpoints - both beams are equal length
-  const beamEndpoints = calculateBeamEndpoints();
-  const collisionPoint = beamEndpoints
-    ? {
-        x: (beamEndpoints.leftEnd.x + beamEndpoints.rightEnd.x) / 2,
-        y: (beamEndpoints.leftEnd.y + beamEndpoints.rightEnd.y) / 2,
-      }
-    : null;
+  const collisionPoint = calculateCollisionPoint();
   
   // Determine if beams should be active (during duel, when both wizards are present and we have positions)
   const beamsActive = Boolean(
@@ -369,7 +318,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
     rightWizard && 
     leftWandTip && 
     rightWandTip && 
-    beamEndpoints &&
+    collisionPoint &&
     leftWizardData &&
     rightWizardData
   );
@@ -471,7 +420,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
         )}
 
         {/* Lightning Beams Overlay - Two separate beams, one from each wizard */}
-        {beamsActive && leftWandTip && rightWandTip && beamEndpoints && leftWizardData && rightWizardData && (
+        {beamsActive && leftWandTip && rightWandTip && collisionPoint && leftWizardData && rightWizardData && (
           <div 
             className="absolute inset-0 pointer-events-none" 
             style={{ 
@@ -483,7 +432,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
             {/* Left wizard's beam - equal length from left wand tip */}
             <LightningBeam
               start={leftWandTip}
-              end={beamEndpoints.leftEnd}
+              end={collisionPoint}
               color={leftWizardData.color}
               thickness={7}
               glowSize={24}
@@ -492,7 +441,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
             {/* Right wizard's beam - equal length from right wand tip */}
             <LightningBeam
               start={rightWandTip}
-              end={beamEndpoints.rightEnd}
+              end={collisionPoint}
               color={rightWizardData.color}
               thickness={7}
               glowSize={24}
