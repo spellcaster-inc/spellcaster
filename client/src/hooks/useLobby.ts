@@ -171,23 +171,15 @@ export function useLobby(): UseLobbyResult {
           return acc;
         }, {}),
       });
-      setDuel((prev) => {
-        const updated = prev
+      setDuel((prev) =>
+        prev
           ? {
               ...prev,
               beamOffset: payload.beamOffset,
               round: payload.roundNumber,
             }
-          : prev;
-        console.log(
-          '📊 beamOffset from server:',
-          payload.beamOffset,
-          'scores:',
-          payload.playerResults.map((p) => p.totalScore)
-        );
-        console.log('🎯 duel.beamOffset after update:', updated?.beamOffset);
-        return updated;
-      });
+          : prev
+      );
     };
 
     const handleCompleted = (payload: GameSummary) => {

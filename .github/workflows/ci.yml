@@ -29,6 +29,10 @@ jobs:
         working-directory: client
         run: npm ci
 
+      - name: test client
+        working-directory: client
+        run: npm test
+
       - name: build client
         working-directory: client
         run: npm run build
@@ -38,6 +42,10 @@ jobs:
       - name: install server deps
         working-directory: server
         run: npm ci
+
+      - name: test server
+        working-directory: server
+        run: npm test
 
       - name: build server
         working-directory: server

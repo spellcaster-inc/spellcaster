@@ -33,6 +33,7 @@ export interface DuelState {
   startedAt: string;
   players: Player[];
   settings: GameSettings;
+  /** -100 favors players[1], 0 is centered, and 100 favors players[0]. */
   beamOffset: number;
 }
 
@@ -84,6 +85,7 @@ export interface RoundRecapPayload {
   spell: string;
   playerResults: PlayerRoundResult[];
   winningPlayerId: string | null;
+  /** -100 favors players[1], 0 is centered, and 100 favors players[0]. */
   beamOffset: number;
 }
 
@@ -166,4 +168,3 @@ export interface SocketData {
   roomCode?: string;
   playerName?: string;
 }
-

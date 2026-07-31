@@ -8,7 +8,7 @@ Spellcaster is a real-time 1v1 wizard spelling duel. Two players join a lobby, h
 2. Both players ready up; the host starts the duel.
 3. Each round: 3-second countdown → spell prompt audio → up to 10 seconds to type and cast.
 4. Scores combine spelling accuracy (Levenshtein) and speed bonus.
-5. Round score differences move a shared beam. Reach the beam threshold early, or lead after all rounds, to win. Disconnect mid-duel forfeits.
+5. The cumulative-score lead moves a shared beam. Reach the beam threshold early, or lead after all rounds, to win. Disconnect mid-duel forfeits.
 
 ## Technology stack
 
@@ -18,7 +18,7 @@ Spellcaster is a real-time 1v1 wizard spelling duel. Two players join a lobby, h
 | Server | Node.js, Express 5, TypeScript, Socket.IO 4 |
 | Shared | TypeScript event/payload types in `shared/types` |
 | Audio | Pre-generated ElevenLabs MP3s for catalog spells; browser TTS for custom words |
-| CI | GitHub Actions (client + server `npm ci` / `npm run build`) |
+| CI | GitHub Actions (client + server `npm ci` / `npm test` / `npm run build`) |
 
 There is no database. Lobby and duel state live in server memory.
 
@@ -74,6 +74,13 @@ npm run dev
 ```
 
 Open the Vite URL (usually `http://localhost:5173`). Use two browser profiles/windows to host and join.
+
+### Test
+
+```bash
+cd client && npm test
+cd server && npm test
+```
 
 ### Production-style commands
 

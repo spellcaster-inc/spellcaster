@@ -15,13 +15,12 @@ import {
 } from '../../../shared/types/socket';
 import { buildSpellQueue, SpellDefinition } from './spells';
 import { computeRoundScore } from './scoring';
+import { BEAM_THRESHOLD, calculateBeamOffset } from './beam';
 
 const COUNTDOWN_MS = 3000;
 const ROUND_TIMEOUT_MS = 10000;
 const RECAP_DELAY_MS = 1000;
 const BETWEEN_ROUND_DELAY_MS = 8000;
-const BEAM_THRESHOLD = 100;
-const BEAM_DELTA_FACTOR = 0.5;
 
 interface DuelSubmission {
   playerId: string;
@@ -346,8 +345,10 @@ export class DuelManager {
     }
 
     if (playerResults.length === 2) {
-      const delta = playerResults[0].totalScore - playerResults[1].totalScore;
-      duel.beamOffset = Math.max(-BEAM_THRESHOLD, Math.min(BEAM_THRESHOLD, duel.beamOffset + delta * BEAM_DELTA_FACTOR));
+      duel.beamOffset = calculateBeamOffset(
+        duel.totalScores[playerResults[0].playerId],
+        duel.totalScores[playerResults[1].playerId]
+      );
     }
 
     const recap: RoundRecapPayload = {
@@ -483,4 +484,3 @@ export class DuelManager {
     duel.roundInFlight = undefined;
   }
 }
-
