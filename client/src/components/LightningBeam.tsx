@@ -17,6 +17,30 @@ export interface LightningBeamProps {
   active?: boolean;    // if false, renders nothing
 }
 
+interface BeamCanvasBounds {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
+export function calculateBeamCanvasBounds(points: Point[], glowSize: number): BeamCanvasBounds {
+  const padding = Math.max(1, glowSize * 2);
+  const xValues = points.map((point) => point.x);
+  const yValues = points.map((point) => point.y);
+  const minX = Math.min(...xValues) - padding;
+  const minY = Math.min(...yValues) - padding;
+  const maxX = Math.max(...xValues) + padding;
+  const maxY = Math.max(...yValues) + padding;
+
+  return {
+    minX,
+    minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
 /**
  * Options for building zig-zag points
  */
@@ -172,15 +196,9 @@ export function LightningBeam({
   const gradientId = `lightning-gradient-${color.replace('#', '')}`;
   const filterId = `lightning-glow-${color.replace('#', '')}`;
 
-  // Calculate SVG dimensions from the bounding box of the path
-  // Add padding for glow effects
-  const padding = glowSize * 2;
-  const minX = Math.min(start.x, end.x) - padding;
-  const minY = Math.min(start.y, end.y) - padding;
-  const maxX = Math.max(start.x, end.x) + padding;
-  const maxY = Math.max(start.y, end.y) + padding;
-  const width = maxX - minX;
-  const height = maxY - minY;
+  // Size from every animated point, not just the endpoints, and leave enough
+  // space for the wide stroke plus blur so neither can hit a hard SVG edge.
+  const { minX, minY, width, height } = calculateBeamCanvasBounds(points, glowSize);
 
   // Adjust path coordinates to be relative to the SVG viewBox
   const adjustedPath = points.map(p => ({
@@ -192,19 +210,29 @@ export function LightningBeam({
   return (
     <svg
       className="absolute pointer-events-none"
+      overflow="visible"
       style={{ 
         zIndex: 5,
         left: `${minX}px`,
         top: `${minY}px`,
         width: `${width}px`,
         height: `${height}px`,
+        overflow: 'visible',
       }}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
     >
       <defs>
         {/* Gaussian blur filter for outer glow */}
-        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+        <filter
+          id={filterId}
+          filterUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          colorInterpolationFilters="sRGB"
+        >
           <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
         </filter>
 
@@ -241,4 +269,3 @@ export function LightningBeam({
     </svg>
   );
 }
-

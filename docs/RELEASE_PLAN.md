@@ -81,7 +81,7 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Status**         | Complete                                                                                                                                                                                              |
 | **Why**            | Raw per-round movement and amplified client geometry could push the collision beyond a wizard, while the visual did not clearly represent the cumulative-score lead.                                |
 | **Affected files** | `server/src/game/duelManager.ts`, `client/src/components/WizardBeam.tsx`, shared socket types, beam tests and documentation                                                                           |
-| **Acceptance**     | Beam position is derived from the cumulative-score difference; a 280-point lead reaches ±100; both clients render one shared collision point that remains between the wand tips; PR CI tests the math. |
+| **Acceptance**     | Beam position is derived from the cumulative-score difference; a 280-point lead reaches ±100; both clients render one shared collision point that remains between the wand tips; glow filters render without rectangular top/bottom clipping; PR CI tests the math and SVG bounds. |
 
 
 ---
