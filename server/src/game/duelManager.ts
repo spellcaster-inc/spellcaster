@@ -20,7 +20,11 @@ import { BEAM_THRESHOLD, calculateBeamOffset } from './beam';
 const COUNTDOWN_MS = 3000;
 const ROUND_TIMEOUT_MS = 10000;
 const RECAP_DELAY_MS = 1000;
-const BETWEEN_ROUND_DELAY_MS = 8000;
+const ROUND_RECAP_MS = 5000;
+const FINISHER_STARTS_IN_MS = 500;
+const FINISHER_DURATION_MS = 1400;
+const FINAL_PRESENTATION_BUFFER_MS = 200;
+const TERMINAL_RECAP_HOLD_MS = 1000;
 
 interface DuelSubmission {
   playerId: string;
@@ -41,6 +45,18 @@ interface RoundInFlight {
   recapHandle?: NodeJS.Timeout;
 }
 
+interface RecapInFlight {
+  roundNumber: number;
+  skipPlayerIds: Set<string>;
+  timeoutHandle: NodeJS.Timeout;
+}
+
+interface DuelFinalization {
+  summary: GameSummary;
+  completionHandle: NodeJS.Timeout;
+  completed: boolean;
+}
+
 interface ActiveDuel {
   roomCode: string;
   players: Player[];
@@ -52,7 +68,8 @@ interface ActiveDuel {
   rounds: RoundRecapPayload[];
   roundInFlight?: RoundInFlight;
   countdownHandle?: NodeJS.Timeout;
-  betweenRoundHandle?: NodeJS.Timeout;
+  recapInFlight?: RecapInFlight;
+  finalization?: DuelFinalization;
 }
 
 interface DuelManagerDeps {
@@ -185,6 +202,11 @@ export class DuelManager {
       return;
     }
 
+    // The earned outcome is immutable once the terminal presentation begins.
+    if (duel.finalization) {
+      return;
+    }
+
     // For forfeit, find the player who is still in the lobby
     const lobby = this.deps.lobbies.get(roomCode);
     const remainingPlayerIds = lobby?.players.map(p => p.id) ?? [];
@@ -193,9 +215,45 @@ export class DuelManager {
     this.completeDuel(duel, 'forfeit', remainingPlayer?.id ?? null);
   }
 
+  handleRecapSkip(roomCode: string, playerId: string, roundNumber: number): string | null {
+    const duel = this.duels.get(roomCode);
+    if (!duel) {
+      return null;
+    }
+
+    if (!duel.players.some((player) => player.id === playerId)) {
+      return 'you are not part of this duel';
+    }
+
+    const recap = duel.recapInFlight;
+    if (duel.finalization || !recap || recap.roundNumber !== roundNumber) {
+      return null;
+    }
+
+    if (recap.skipPlayerIds.has(playerId)) {
+      return null;
+    }
+
+    recap.skipPlayerIds.add(playerId);
+    this.deps.io.to(roomCode).emit('duel:recapSkipState', {
+      roomCode,
+      roundNumber,
+      playerIds: duel.players
+        .map((player) => player.id)
+        .filter((id) => recap.skipPlayerIds.has(id)),
+    });
+
+    if (recap.skipPlayerIds.size === duel.players.length) {
+      this.clearRecap(duel);
+      this.queueCountdown(duel);
+    }
+
+    return null;
+  }
+
   private queueCountdown(duel: ActiveDuel) {
     this.clearCountdown(duel);
-    this.clearBetweenRound(duel);
+    this.clearRecap(duel);
 
     duel.countdownHandle = setTimeout(() => {
       this.startRound(duel.roomCode);
@@ -251,6 +309,7 @@ export class DuelManager {
             spellText: spell.text,
             readingSpeed: duel.settings.readingSpeed,
             startedAt: startedAtIso,
+            answerWindowMs: ROUND_TIMEOUT_MS,
           }
         : {
             mode: 'catalog' as const,
@@ -260,6 +319,7 @@ export class DuelManager {
             audioUrl: spell.audioUrl,
             readingSpeed: duel.settings.readingSpeed,
             startedAt: startedAtIso,
+            answerWindowMs: ROUND_TIMEOUT_MS,
           };
 
     this.deps.io.to(roomCode).emit('duel:prompt', promptPayload);
@@ -379,14 +439,23 @@ export class DuelManager {
       return;
     }
 
-    duel.betweenRoundHandle = setTimeout(() => {
+    const timeoutHandle = setTimeout(() => {
       this.queueCountdown(duel);
-    }, BETWEEN_ROUND_DELAY_MS);
+    }, ROUND_RECAP_MS);
+    duel.recapInFlight = {
+      roundNumber: round.roundNumber,
+      skipPlayerIds: new Set(),
+      timeoutHandle,
+    };
   }
 
   private completeDuel(duel: ActiveDuel, reason: GameSummary['reason'], forfeitWinnerId: string | null = null) {
+    if (duel.finalization) {
+      return;
+    }
+
     this.clearCountdown(duel);
-    this.clearBetweenRound(duel);
+    this.clearRecap(duel);
     this.clearActiveRound(duel);
 
     let winner: Player | null = null;
@@ -432,6 +501,56 @@ export class DuelManager {
       }),
     };
 
+    if (reason === 'forfeit') {
+      this.finishDuel(duel, summary);
+      return;
+    }
+
+    const latestRound = duel.rounds[duel.rounds.length - 1];
+    const playerScores = duel.players.map((player) => duel.totalScores[player.id] ?? 0);
+    const isTied = playerScores.length >= 2 && playerScores[0] === playerScores[1];
+    const shouldSweep =
+      reason === 'rounds' &&
+      Boolean(winner) &&
+      !isTied &&
+      Math.abs(duel.beamOffset) < BEAM_THRESHOLD;
+
+    const holdMs = shouldSweep
+      ? FINISHER_STARTS_IN_MS + FINISHER_DURATION_MS + FINAL_PRESENTATION_BUFFER_MS
+      : TERMINAL_RECAP_HOLD_MS;
+    const completionHandle = setTimeout(() => {
+      this.finishDuel(duel, summary);
+    }, holdMs);
+    duel.finalization = {
+      summary,
+      completionHandle,
+      completed: false,
+    };
+
+    if (shouldSweep && winner && latestRound) {
+      const winnerIndex = duel.players.findIndex((player) => player.id === winner.id);
+      this.deps.io.to(duel.roomCode).emit('duel:finisher', {
+        roomCode: duel.roomCode,
+        roundNumber: latestRound.roundNumber,
+        winnerId: winner.id,
+        targetBeamOffset: winnerIndex === 0 ? 100 : -100,
+        startsInMs: FINISHER_STARTS_IN_MS,
+        durationMs: FINISHER_DURATION_MS,
+      });
+    }
+  }
+
+  private finishDuel(duel: ActiveDuel, summary: GameSummary) {
+    const currentDuel = this.duels.get(duel.roomCode);
+    if (currentDuel !== duel || duel.finalization?.completed) {
+      return;
+    }
+
+    if (duel.finalization) {
+      duel.finalization.completed = true;
+      clearTimeout(duel.finalization.completionHandle);
+    }
+
     this.deps.io.to(duel.roomCode).emit('duel:completed', summary);
     this.resetLobby(duel.roomCode);
     this.duels.delete(duel.roomCode);
@@ -458,10 +577,10 @@ export class DuelManager {
     }
   }
 
-  private clearBetweenRound(duel: ActiveDuel) {
-    if (duel.betweenRoundHandle) {
-      clearTimeout(duel.betweenRoundHandle);
-      duel.betweenRoundHandle = undefined;
+  private clearRecap(duel: ActiveDuel) {
+    if (duel.recapInFlight) {
+      clearTimeout(duel.recapInFlight.timeoutHandle);
+      duel.recapInFlight = undefined;
     }
   }
 

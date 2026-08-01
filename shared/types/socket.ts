@@ -52,6 +52,7 @@ export interface CatalogSpellPromptPayload {
   audioUrl: string;
   readingSpeed: ReadingSpeed;
   startedAt: string;
+  answerWindowMs: number;
 }
 
 export interface CustomSpellPromptPayload {
@@ -62,6 +63,7 @@ export interface CustomSpellPromptPayload {
   spellText: string;
   readingSpeed: ReadingSpeed;
   startedAt: string;
+  answerWindowMs: number;
 }
 
 export type SpellPromptPayload = CatalogSpellPromptPayload | CustomSpellPromptPayload;
@@ -112,6 +114,26 @@ export interface PlayerSubmissionPayload {
   playerId: string;
 }
 
+export interface RecapSkipPayload {
+  roomCode: string;
+  roundNumber: number;
+}
+
+export interface RecapSkipStatePayload {
+  roomCode: string;
+  roundNumber: number;
+  playerIds: string[];
+}
+
+export interface DuelFinisherPayload {
+  roomCode: string;
+  roundNumber: number;
+  winnerId: string;
+  targetBeamOffset: -100 | 100;
+  startsInMs: number;
+  durationMs: number;
+}
+
 export interface ServerErrorPayload {
   message: string;
 }
@@ -141,6 +163,7 @@ export interface ClientToServerEvents {
     guess: string;
     durationMs: number;
   }) => void;
+  'duel:skipRecap': (payload: RecapSkipPayload) => void;
 }
 
 // types that describe the events server can send to client
@@ -154,6 +177,8 @@ export interface ServerToClientEvents {
   'duel:prompt': (payload: SpellPromptPayload) => void;
   'duel:roundRecap': (payload: RoundRecapPayload) => void;
   'duel:playerSubmitted': (payload: PlayerSubmissionPayload) => void;
+  'duel:recapSkipState': (payload: RecapSkipStatePayload) => void;
+  'duel:finisher': (payload: DuelFinisherPayload) => void;
   'duel:completed': (payload: GameSummary) => void;
   error: (payload: ServerErrorPayload) => void;
 }

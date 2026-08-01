@@ -5,11 +5,13 @@ import type {
   DuelState,
   GameSettings,
   GameSummary,
+  DuelFinisherPayload,
   LobbyCreateResultPayload,
   LobbyState,
   Player,
   PlayerSubmissionPayload,
   RoundRecapPayload,
+  RecapSkipStatePayload,
   ServerErrorPayload,
   SpellPromptPayload,
 } from '../../../shared/types/socket';
@@ -21,6 +23,8 @@ interface UseLobbyResult {
   prompt: SpellPromptPayload | null;
   roundRecap: RoundRecapPayload | null;
   summary: GameSummary | null;
+  finisher: DuelFinisherPayload | null;
+  recapSkipState: RecapSkipStatePayload | null;
   scores: Record<string, number>;
   roundSubmissions: { roundNumber: number; playerIds: Record<string, boolean> } | null;
   error: string | null;
@@ -33,6 +37,7 @@ interface UseLobbyResult {
   setReady: (ready: boolean) => void;
   startDuel: () => void;
   submitSpell: (guess: string, durationMs: number, promptId: string) => void;
+  skipRecap: (roundNumber: number) => void;
   clearError: () => void;
   resetSummary: () => void;
 }
@@ -46,6 +51,8 @@ export function useLobby(): UseLobbyResult {
   const [prompt, setPrompt] = useState<SpellPromptPayload | null>(null);
   const [roundRecap, setRoundRecap] = useState<RoundRecapPayload | null>(null);
   const [summary, setSummary] = useState<GameSummary | null>(null);
+  const [finisher, setFinisher] = useState<DuelFinisherPayload | null>(null);
+  const [recapSkipState, setRecapSkipState] = useState<RecapSkipStatePayload | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [roundSubmissions, setRoundSubmissions] = useState<{
     roundNumber: number;
@@ -111,12 +118,16 @@ export function useLobby(): UseLobbyResult {
       setPrompt(null);
       setRoundRecap(null);
       setSummary(null);
+      setFinisher(null);
+      setRecapSkipState(null);
     };
 
     const handleCountdown = (payload: CountdownPayload) => {
       setCountdown(payload);
       setPrompt(null);
       setRoundRecap(null);
+      setRecapSkipState(null);
+      setFinisher(null);
       setRoundSubmissions({
         roundNumber: payload.roundNumber,
         playerIds: {},
@@ -182,12 +193,22 @@ export function useLobby(): UseLobbyResult {
       );
     };
 
+    const handleRecapSkipState = (payload: RecapSkipStatePayload) => {
+      setRecapSkipState(payload);
+    };
+
+    const handleFinisher = (payload: DuelFinisherPayload) => {
+      setFinisher(payload);
+    };
+
     const handleCompleted = (payload: GameSummary) => {
       setSummary(payload);
       setCountdown(null);
       setPrompt(null);
       setRoundRecap(null);
       setDuel(null);
+      setFinisher(null);
+      setRecapSkipState(null);
       setScores(
         payload.players.reduce<Record<string, number>>((acc, player) => {
           acc[player.playerId] = player.totalScore;
@@ -241,6 +262,8 @@ export function useLobby(): UseLobbyResult {
     socket.on('duel:countdown', handleCountdown);
     socket.on('duel:prompt', handlePrompt);
     socket.on('duel:roundRecap', handleRoundRecap);
+    socket.on('duel:recapSkipState', handleRecapSkipState);
+    socket.on('duel:finisher', handleFinisher);
     socket.on('duel:playerSubmitted', handlePlayerSubmitted);
     socket.on('duel:completed', handleCompleted);
     socket.on('error', handleError);
@@ -258,6 +281,8 @@ export function useLobby(): UseLobbyResult {
       socket.off('duel:countdown', handleCountdown);
       socket.off('duel:prompt', handlePrompt);
       socket.off('duel:roundRecap', handleRoundRecap);
+      socket.off('duel:recapSkipState', handleRecapSkipState);
+      socket.off('duel:finisher', handleFinisher);
       socket.off('duel:playerSubmitted', handlePlayerSubmitted);
       socket.off('duel:completed', handleCompleted);
       socket.off('error', handleError);
@@ -281,6 +306,8 @@ export function useLobby(): UseLobbyResult {
     setPrompt(null);
     setRoundRecap(null);
     setSummary(null);
+    setFinisher(null);
+    setRecapSkipState(null);
     setScores({});
     setRoundSubmissions(null);
   }, []);
@@ -371,6 +398,11 @@ export function useLobby(): UseLobbyResult {
     [lobby]
   );
 
+  const skipRecap = useCallback((roundNumber: number) => {
+    if (!lobby) return;
+    getSocket().emit('duel:skipRecap', { roomCode: lobby.roomCode, roundNumber });
+  }, [lobby]);
+
   const clearError = useCallback(() => setError(null), []);
   const resetSummary = useCallback(() => setSummary(null), []);
 
@@ -381,6 +413,8 @@ export function useLobby(): UseLobbyResult {
     prompt,
     roundRecap,
     summary,
+    finisher,
+    recapSkipState,
     scores,
     roundSubmissions,
     error,
@@ -393,6 +427,7 @@ export function useLobby(): UseLobbyResult {
     setReady,
     startDuel,
     submitSpell,
+    skipRecap,
     clearError,
     resetSummary,
   };

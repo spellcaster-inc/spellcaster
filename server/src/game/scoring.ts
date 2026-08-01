@@ -7,6 +7,7 @@ const MAX_BASE_SCORE = 120;
 const MAX_BONUS_SCORE = 20;
 const BONUS_FULL_MS = 3000;
 const BONUS_ZERO_MS = 7000;
+export const MIN_SPEED_BONUS_ACCURACY = 0.3;
 
 export function levenshteinDistance(a: string, b: string): number {
   const source = a.toUpperCase();
@@ -66,7 +67,8 @@ export function computeSpeedBonus(durationMs: number): number {
 
 export function computeRoundScore(spell: string, guess: string, durationMs: number) {
   const { accuracy, baseScore } = computeAccuracy(spell, guess);
-  const bonusScore = computeSpeedBonus(durationMs);
+  const bonusScore =
+    accuracy >= MIN_SPEED_BONUS_ACCURACY ? computeSpeedBonus(durationMs) : 0;
   const totalScore = baseScore + bonusScore;
 
   return {
@@ -76,4 +78,3 @@ export function computeRoundScore(spell: string, guess: string, durationMs: numb
     totalScore,
   };
 }
-

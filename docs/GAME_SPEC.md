@@ -27,7 +27,7 @@ There is no account system, persistence, matchmaking queue, or spectator mode.
 | Host settings mid-lobby | Partial | Server supports `lobby:updateSettings`; **client never emits it** |
 | Host transfer on leave | Confirmed | Remaining player becomes host |
 | Wizard avatar selection | Confirmed | 6 avatars; id stored on player |
-| How to Play modal | Confirmed | Minimal copy only |
+| How to Play modal | Confirmed | Explains scoring, timing, recap skip, beam wins, rounds, and forfeits |
 | Connection status | Partial | Used to disable some buttons; no global reconnect UX |
 
 ### Duel
@@ -38,13 +38,16 @@ There is no account system, persistence, matchmaking queue, or spectator mode.
 | Spell prompt | Confirmed | Catalog MP3 or custom TTS |
 | Typing + Cast Spell | Confirmed | Hidden input + visual keyboard highlight |
 | On-screen keyboard input | Incomplete | Visual only (`pointer-events-none`) |
-| 10s round timeout | Confirmed | Empty auto-submission |
+| 10s round timeout + timer ring | Confirmed | Small client display mirrors the server window; timeout creates an empty auto-submission |
 | Opponent submitted indicator | Confirmed | Via `duel:playerSubmitted` |
-| Round recap | Confirmed | Shows spell answer, guesses, scores |
+| Cumulative score indicator | Confirmed | Server-owned totals remain visible in lobby player order at the top of the wizard/beam arena |
+| Round recap | Confirmed | Compact spell/winner/player-guess/round-score view; five-second server window |
+| Mutual recap skip | Confirmed | Both players must select **Skip to next spell** to advance early; a plain inline `0/2`–`2/2` counter shows readiness |
 | Beam visualization | Confirmed | Driven by server `beamOffset` |
 | Early beam win | Confirmed | `\|beamOffset\| >= 100` |
 | End after N rounds | Confirmed | 5 / 10 / 15 |
-| Game summary overlay | Confirmed | Victory/Defeat + stats table |
+| Terminal cast presentation | Confirmed | Truthful final beam settles before an optional cosmetic winning sweep |
+| Game summary overlay | Confirmed | Victory/Defeat + expandable full breakdown for every player and round |
 | Forfeit on disconnect/leave | Confirmed | Remaining player wins |
 | Rematch in same lobby | Inferred | Server resets lobby to `phase: 'lobby'`; both must ready again |
 | Ping / pong | Confirmed | Debug events; client exposes unused `sendPing` |
@@ -85,9 +88,11 @@ Lobby
   ├─ Host starts duel
   └─ Leave → Landing
 Duel (per round)
-  Countdown 3s → Prompt audio → Type/Cast (≤10s) → Recap (~1s lock + 8s between) → next or end
+  Countdown 3s → Prompt audio + timer ring → Type/Cast (≤10s)
+  → Recap (~1s lock + 5s, or both players skip) → next or terminal cast
 End
-  duel:completed + lobby reset to phase lobby → Summary overlay → Return to Lobby → ready again
+  Truthful final beam → optional cosmetic finisher → duel:completed
+  → lobby reset to phase lobby → Summary overlay → Return to Lobby → ready again
 ```
 
 ### Host path (Confirmed)
@@ -106,9 +111,10 @@ End
 
 ### Post-game (Confirmed)
 
-1. Server emits `duel:completed`, then resets lobby to `phase: 'lobby'` and broadcasts `lobby:state` (same turn).
-2. Client batches both updates → Lobby under Victory/Defeat summary.
-3. “Return to Lobby” clears the overlay only.
+1. Server emits the terminal `duel:roundRecap` and locks the earned outcome.
+2. A rounds-complete, non-tied winner below the real beam threshold receives a presentation-only `duel:finisher`; the real score and `beamOffset` remain unchanged. Real beam wins hold briefly without a redundant sweep; forfeits complete immediately.
+3. After the bounded presentation, server emits `duel:completed`, resets the lobby to `phase: 'lobby'`, and broadcasts `lobby:state`.
+4. Client shows the Lobby under the Victory/Defeat summary. “Return to Lobby” clears the overlay only.
 
 ## 4. Game creation and joining
 
@@ -169,6 +175,7 @@ Source: `server/src/game/spellCatalog.json`
 | `custom` | `spellText` | `speechSynthesis` |
 
 If catalog spell lacks `audioUrl`, server also falls back to custom-shaped payload with `spellText` (**Confirmed defensive path**).
+Both prompt modes include server `startedAt` and `answerWindowMs`; the client uses them only to render the timer ring.
 
 ## 6. Playback
 
@@ -179,7 +186,11 @@ Timers (server-authoritative):
 | Countdown | 3000 ms |
 | Answer window | 10000 ms |
 | Recap delay after lock | 1000 ms |
-| Between rounds | 8000 ms |
+| Round recap | 5000 ms, or until both players skip |
+| Pre-finisher truthful-beam settle | 500 ms |
+| Cosmetic finisher sweep | 1400 ms |
+| Finisher buffer before summary | 200 ms |
+| Real beam win / tied terminal hold | 1000 ms |
 
 Client countdown display stops at **1**, never shows 0 (**Confirmed**).
 
@@ -190,10 +201,12 @@ From `server/src/game/scoring.ts` (**Confirmed**):
 1. Uppercase Levenshtein distance between spell and guess.
 2. `accuracy = max(0, 1 - distance / maxLen)`.
 3. `baseScore = round(accuracy * 120)` (max 120).
-4. Speed bonus (max 20): full if ≤3000 ms, zero if ≥7000 ms, linear between.
-5. `totalScore = baseScore + bonusScore`.
+4. A guess qualifies for the speed bonus only when `accuracy >= 0.30` (exactly 30% qualifies).
+5. For qualifying guesses, the existing speed bonus remains max 20: full if ≤3000 ms, zero if ≥7000 ms, linear between.
+6. Below 30% accuracy, `bonusScore = 0` regardless of speed.
+7. `totalScore = baseScore + bonusScore`.
 
-**Important:** speed bonus does **not** require accuracy — a fast wrong/empty guess still earns bonus (**Confirmed**). Server duration is `now - prompt start`, clamped to the 10s window; client duration is ignored.
+The qualification gate does not multiply or otherwise scale the existing bonus: qualifying players receive the normal time-based value. Server duration is `now - prompt start`, clamped to the 10s window; client duration is ignored. The player-facing metric remains **Typing speed**.
 
 Round winner: highest round `totalScore`, or `null` on tie.
 
@@ -210,6 +223,8 @@ beamOffset clamped to [-100, 100]
 Player order is lobby join order (host typically index 0). Positive offsets favor player 0;
 negative offsets favor player 1. The client maps the offset directly onto one shared collision
 point between the two wand tips. A cumulative lead of 280 points reaches the opponent's wand.
+
+On a non-tied final-round score victory below the 280-point lead threshold, the client first renders this truthful position, then animates a separate presentation-only target to the losing wizard. The cosmetic target is never stored in scores, `DuelState.beamOffset`, round recaps, or the game summary. Exact score ties do not receive a cosmetic sweep.
 
 ### End reasons (`GameSummary.reason`)
 

@@ -3,7 +3,9 @@ import { RoundRecapCard } from '../components/RoundRecapCard';
 import { CountdownDisplay } from '../components/CountdownDisplay';
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard';
 import { WizardBeam } from '../components/WizardBeam';
-import type { DuelState, Player, CountdownPayload, SpellPromptPayload, RoundRecapPayload } from '../../../shared/types/socket';
+import { SpellTimerRing } from '../components/SpellTimerRing';
+import { usePromptTimer } from '../hooks/usePromptTimer';
+import type { DuelFinisherPayload, DuelState, Player, CountdownPayload, SpellPromptPayload, RecapSkipStatePayload, RoundRecapPayload } from '../../../shared/types/socket';
 
 interface GamePageProps {
   duel: DuelState;
@@ -12,6 +14,9 @@ interface GamePageProps {
   countdownValue: number | null;
   prompt: SpellPromptPayload | null;
   roundRecap: RoundRecapPayload | null;
+  scores: Record<string, number>;
+  recapSkipState: RecapSkipStatePayload | null;
+  finisher: DuelFinisherPayload | null;
   currentGuess: string;
   hasSubmitted: boolean;
   opponentSubmitted: boolean;
@@ -19,6 +24,7 @@ interface GamePageProps {
   showResultsPending: boolean;
   onGuessChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmitSpell: () => void;
+  onSkipRecap: (roundNumber: number) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   inputRef: React.RefObject<HTMLInputElement>;
   onLeaveDuel: () => void;
@@ -31,6 +37,9 @@ const GamePage: React.FC<GamePageProps> = ({
   countdownValue,
   prompt,
   roundRecap,
+  scores,
+  recapSkipState,
+  finisher,
   currentGuess,
   hasSubmitted,
   opponentSubmitted,
@@ -38,34 +47,44 @@ const GamePage: React.FC<GamePageProps> = ({
   showResultsPending,
   onGuessChange,
   onSubmitSpell,
+  onSkipRecap,
   onKeyDown,
   inputRef,
   onLeaveDuel,
 }) => {
   const currentRoundNumber = countdown?.roundNumber ?? prompt?.roundNumber ?? roundRecap?.roundNumber ?? duel.round ?? 1;
   const totalRounds = duel.totalRounds;
+  const timer = usePromptTimer(prompt);
+  const isTerminalRecap = Boolean(roundRecap && (roundRecap.roundNumber >= totalRounds || Math.abs(roundRecap.beamOffset) >= 100));
 
   const renderCastingPanel = () => (
-    <div className="card-glow rounded-[28px] border border-white/10 bg-white/5 p-3 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl space-y-2 max-w-2xl mx-auto w-full h-full flex flex-col justify-center">
-      <div className="flex items-center justify-between">
+    <div className="card-glow mx-auto flex min-h-[280px] w-full max-w-2xl flex-col justify-center space-y-3 rounded-[28px] border border-white/10 bg-white/5 p-3 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl sm:p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-spellcaster text-base text-emerald-200 drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]">
           Type what you hear!
         </p>
-        {opponent && (
-          <p className="text-xs text-slate-300">
-            {opponentSubmitted ? (
-              <span className="inline-flex items-center gap-1.5 text-emerald-300">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                {opponent.name} cast their spell!
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-amber-300">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse" />
-                {opponent.name} is typing...
-              </span>
-            )}
-          </p>
-        )}
+        <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+          {prompt && (hasSubmitted ? (
+            <span className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200" role="status">Spell submitted</span>
+          ) : (
+            <SpellTimerRing {...timer} />
+          ))}
+          {opponent && (
+            <p className="text-xs text-slate-300">
+              {opponentSubmitted ? (
+                <span className="inline-flex items-center gap-1.5 text-emerald-300">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                  {opponent.name} cast their spell!
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-amber-300">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] motion-safe:animate-pulse" />
+                  {opponent.name} is typing...
+                </span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
       <input
@@ -83,7 +102,7 @@ const GamePage: React.FC<GamePageProps> = ({
 
       <div className="rounded-[20px] border border-white/10 bg-slate-950/40 p-2.5 shadow-inner space-y-1">
         <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400 px-1">Wizard Keyboard Feedback</p>
-        <div className="w-full scale-85 origin-top -mt-0">
+        <div className="w-full">
           <OnScreenKeyboard inputRef={inputRef} />
         </div>
       </div>
@@ -122,7 +141,7 @@ const GamePage: React.FC<GamePageProps> = ({
   );
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-magic text-slate-100">
+    <main className="relative min-h-screen overflow-x-hidden bg-magic text-slate-100">
       {/* Enhanced background animations */}
       <div className="pointer-events-none absolute inset-0">
         <span className="magic-star" style={{ top: '10%', left: '20%', animationDelay: '0s' }} />
@@ -168,11 +187,22 @@ const GamePage: React.FC<GamePageProps> = ({
             </div>
           </header>
 
-          {/* Main Content Area - Fixed height to prevent resizing */}
+          {/* Main content grows with its active state so controls remain inside the card. */}
           <div className="flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-center h-[280px]">
-              {roundRecap && (
-                <RoundRecapCard recap={roundRecap} localPlayerId={localPlayer?.id ?? null} />
+            <div className="flex min-h-[280px] items-center justify-center py-1">
+              {roundRecap && !isTerminalRecap && (
+                <RoundRecapCard
+                  recap={roundRecap}
+                  players={duel.players}
+                  localPlayerId={localPlayer?.id ?? null}
+                  skipState={recapSkipState}
+                  onSkip={() => onSkipRecap(roundRecap.roundNumber)}
+                />
+              )}
+              {roundRecap && isTerminalRecap && (
+                <div className="card-glow mx-auto flex min-h-[280px] w-full max-w-2xl items-center justify-center rounded-[28px] border border-amber-300/20 bg-amber-400/5 p-6 text-center backdrop-blur-2xl" role="status">
+                  <div><p className="font-incantation text-2xl text-amber-100">The final spell takes hold…</p><p className="mt-2 text-sm text-slate-300">Watch the duel decide the victor.</p></div>
+                </div>
               )}
               {!roundRecap && countdown && countdownValue && (
                 <CountdownDisplay
@@ -184,7 +214,7 @@ const GamePage: React.FC<GamePageProps> = ({
               {!roundRecap && !countdown && prompt && renderCastingPanel()}
 
               {showResultsPending && (
-                <div className="card-glow rounded-[28px] border border-amber-300/30 bg-amber-400/10 px-6 py-4 text-center shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl max-w-2xl mx-auto w-full h-full flex items-center justify-center">
+                <div className="card-glow mx-auto flex min-h-[280px] w-full max-w-2xl items-center justify-center rounded-[28px] border border-amber-300/30 bg-amber-400/10 px-6 py-4 text-center shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl">
                   <p className="text-sm font-semibold text-amber-100">
                     Adjudicating this round... both wizards must finish before the scroll reveals your work.
                   </p>
@@ -197,9 +227,11 @@ const GamePage: React.FC<GamePageProps> = ({
           <div className="mt-auto pt-2">
             <WizardBeam
               players={duel.players}
+              scores={scores}
               beamOffset={duel.beamOffset}
               roundRecap={roundRecap}
               localPlayerId={localPlayer?.id ?? null}
+              finisher={finisher}
             />
           </div>
         </div>
@@ -209,4 +241,3 @@ const GamePage: React.FC<GamePageProps> = ({
 };
 
 export default GamePage;
-

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Player, RoundRecapPayload } from '../../../shared/types/socket';
+import type { DuelFinisherPayload, Player, RoundRecapPayload } from '../../../shared/types/socket';
 import type { Wizard } from '../types/wizard';
 import wizardPurple from '../assets/spellcaster-wizards/wizard-purple.png';
 import wizardRed from '../assets/spellcaster-wizards/wizard-red.png';
@@ -8,7 +8,9 @@ import wizardGreen from '../assets/spellcaster-wizards/wizard-green.png';
 import wizardOrange from '../assets/spellcaster-wizards/wizard-orange.png';
 import wizardGrey from '../assets/spellcaster-wizards/wizard-grey.png';
 import { LightningBeam, type Point } from './LightningBeam';
+import { DuelScoreIndicator } from './DuelScoreIndicator';
 import { calculateBeamCollisionPoint } from '../lib/beamGeometry';
+import { calculateFinisherOffset } from '../lib/beamFinisher';
 
 const WIZARDS: Wizard[] = [
   {
@@ -57,12 +59,14 @@ const WIZARDS: Wizard[] = [
 
 interface WizardBeamProps {
   players: Player[];
+  scores: Record<string, number>;
   beamOffset?: number;
   roundRecap?: RoundRecapPayload | null;
   localPlayerId?: string | null;
+  finisher?: DuelFinisherPayload | null;
 }
 
-export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId }: WizardBeamProps) {
+export function WizardBeam({ players, scores, beamOffset = 0, roundRecap, localPlayerId, finisher }: WizardBeamProps) {
   // Match the server's player order so the signed beam offset maps to consistent sides.
   const leftWizard = players[0];
   const rightWizard = players[1];
@@ -129,6 +133,7 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
   const [displayBeamOffset, setDisplayBeamOffset] = useState(beamOffset);
   const beamAnimationRef = useRef<number | null>(null);
   const currentOffsetRef = useRef(beamOffset);
+  const finisherTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     currentOffsetRef.current = displayBeamOffset;
@@ -173,6 +178,40 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
       }
     };
   }, [beamOffset]);
+
+  useEffect(() => {
+    if (!finisher) {
+      return;
+    }
+
+    finisherTimeoutRef.current = window.setTimeout(() => {
+      if (beamAnimationRef.current) cancelAnimationFrame(beamAnimationRef.current);
+      const target = finisher.targetBeamOffset;
+      const start = currentOffsetRef.current;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reducedMotion) {
+        setDisplayBeamOffset(target);
+        currentOffsetRef.current = target;
+        return;
+      }
+      const startTime = performance.now();
+      const animateFinisher = (time: number) => {
+        const progress = Math.min((time - startTime) / finisher.durationMs, 1);
+        const nextValue = calculateFinisherOffset(start, target, progress);
+        setDisplayBeamOffset(nextValue);
+        currentOffsetRef.current = nextValue;
+        if (progress < 1) beamAnimationRef.current = requestAnimationFrame(animateFinisher);
+      };
+      beamAnimationRef.current = requestAnimationFrame(animateFinisher);
+    }, Math.max(0, finisher.startsInMs));
+
+    return () => {
+      if (finisherTimeoutRef.current !== null) {
+        window.clearTimeout(finisherTimeoutRef.current);
+        finisherTimeoutRef.current = null;
+      }
+    };
+  }, [finisher]);
 
   const leftHopAnimationRef = useRef<number | null>(null);
   const rightHopAnimationRef = useRef<number | null>(null);
@@ -244,6 +283,12 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
       }
       if (rightHopAnimationRef.current) {
         cancelAnimationFrame(rightHopAnimationRef.current);
+      }
+      if (finisherTimeoutRef.current !== null) {
+        window.clearTimeout(finisherTimeoutRef.current);
+      }
+      if (beamAnimationRef.current) {
+        cancelAnimationFrame(beamAnimationRef.current);
       }
     };
   }, []);
@@ -322,9 +367,13 @@ export function WizardBeam({ players, beamOffset = 0, roundRecap, localPlayerId 
   return (
     <div 
       ref={containerRef}
-      className="card-glow rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl"
+      className="card-glow rounded-[28px] border border-white/10 bg-white/5 p-4 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl sm:p-6"
     >
-      <div className="relative h-64 flex items-end justify-between px-4">
+      <div className="relative flex h-64 items-end justify-between px-2 pt-16 sm:px-4">
+        <div className="absolute inset-x-3 top-0 z-50 sm:inset-x-12">
+          <DuelScoreIndicator players={players} scores={scores} localPlayerId={localPlayerId ?? null} />
+        </div>
+
         {/* Left Wizard */}
         {leftWizard && leftWizardData && (
           <div className="flex flex-col items-center gap-2" style={{ zIndex: 5, position: 'relative' }}>

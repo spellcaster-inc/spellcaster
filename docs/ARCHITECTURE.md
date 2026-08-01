@@ -156,6 +156,7 @@ Types: `shared/types/socket.ts`.
 | `lobby:updateSettings` | `{ roomCode, settings }`                    | Host-only; resets ready flags                    |
 | `lobby:startDuel`      | `{ roomCode }`                              | Host-only; both ready → start DuelManager        |
 | `duel:submitSpell`     | `{ roomCode, promptId, guess, durationMs }` | Grade path; client duration ignored              |
+| `duel:skipRecap`       | `{ roomCode, roundNumber }`                  | Record an idempotent recap skip vote; both players advance early |
 
 
 
@@ -173,6 +174,8 @@ Types: `shared/types/socket.ts`.
 | `duel:prompt`          | `CatalogSpellPromptPayload | CustomSpellPromptPayload` | Spell to answer         |
 | `duel:playerSubmitted` | `{ roomCode, roundNumber, playerId }`                  | Opponent/self submitted |
 | `duel:roundRecap`      | `RoundRecapPayload`                                    | Answers + scores + beam |
+| `duel:recapSkipState`  | `{ roomCode, roundNumber, playerIds }`                  | Current server-owned recap skip votes |
+| `duel:finisher`        | `{ roomCode, roundNumber, winnerId, targetBeamOffset, startsInMs, durationMs }` | Presentation-only terminal sweep |
 | `duel:completed`       | `GameSummary`                                          | Final results           |
 | `error`                | `{ message }`                                          | Action rejected         |
 
@@ -183,10 +186,10 @@ Types: `shared/types/socket.ts`.
 
 ```ts
 // Catalog prompt — no spell text
-{ mode: 'catalog', roundNumber, totalRounds, promptId, audioUrl, readingSpeed, startedAt }
+{ mode: 'catalog', roundNumber, totalRounds, promptId, audioUrl, readingSpeed, startedAt, answerWindowMs }
 
 // Custom prompt — plaintext for TTS
-{ mode: 'custom', roundNumber, totalRounds, promptId, spellText, readingSpeed, startedAt }
+{ mode: 'custom', roundNumber, totalRounds, promptId, spellText, readingSpeed, startedAt, answerWindowMs }
 
 LobbyState { roomCode, phase: 'lobby'|'in-duel', players[], settings }
 GameSettings { difficulty, rounds, readingSpeed, customWords?, customWordSourceName? }
@@ -231,8 +234,12 @@ Player identity is `socket.id`. `SocketData` may store `roomCode` / `playerName`
 ### Duel Map
 
 - Key: room code
-- Value: `ActiveDuel` (queue, scores, beam, in-flight round, timer handles)
-- Deleted on `completeDuel`
+- Value: `ActiveDuel` (queue, scores, authoritative beam, in-flight round, recap votes/timer, optional locked finalization/timer)
+- Deleted after `finishDuel` emits the summary and resets the lobby
+
+Normal recaps last five seconds. `DuelManager` owns an idempotent set of skip-voting player IDs and queues the unchanged three-second countdown only after both participants vote or the recap timer expires. Terminal rounds do not create skip state.
+
+For non-forfeit terminal outcomes, `DuelManager` locks the summary before presentation. A rounds-complete non-tied winner may receive `duel:finisher`, but that event never changes the authoritative score-derived offset. Server timers bound the presentation so a backgrounded or disconnected client cannot stall completion; disconnects during finalization cannot replace the earned winner with a forfeit.
 
 
 
@@ -243,9 +250,12 @@ Player identity is `socket.id`. `SocketData` may store `roomCode` / `playerName`
 | ----------------------------------- | ---------------------------------------------- |
 | Lobby membership / settings / phase | Server via `lobby:state`                       |
 | Round timing                        | Server timers; client mirrors countdown        |
+| Answer timer ring                   | Client display derived from server prompt timing; never grades or submits |
 | Prompt content                      | Server `duel:prompt`                           |
 | Guess text                          | Client local until submit                      |
 | Scores / beam                       | Server; client updates from recap              |
+| Recap skip votes                    | Server; client mirrors `duel:recapSkipState`   |
+| Terminal sweep                      | Server-declared presentation state kept separate from authoritative beam offset |
 | `localPlayer`                       | Client: `lobby.players.find(id === socket.id)` |
 
 
@@ -311,7 +321,7 @@ Requires `ELEVENLABS_API_KEY`. Skips existing files. **Append-only** catalog rul
 | Payload schema validation       | TS types only; runtime destructuring can throw |
 | `wizardId` validation           | Pass-through string                            |
 | Room-code normalize consistency | Some handlers use raw `roomCode`               |
-| Speed bonus without accuracy    | Fast garbage still scores bonus                |
+| Speed bonus qualification       | Fixed: guesses below 30% accuracy receive zero speed bonus |
 | Public MP3 scraping             | Determined users can map audio over time       |
 | Custom mode leak                | `spellText` intentionally sent for TTS         |
 | Multi-instance safety           | In-memory state only                           |
@@ -352,10 +362,10 @@ Manifest resolution tries several paths relative to `cwd` and `__dirname`. Relia
 `.github/workflows/ci.yml`:
 
 1. Node 20
-2. `client`: `npm ci` + `npm run build`
-3. `server`: `npm ci` + `npm run build`
+2. `client`: `npm ci` + `npm test` + `npm run build`
+3. `server`: `npm ci` + `npm test` + `npm run build`
 
-No test, lint, or type-check-only job beyond what `build` embeds (`client` build runs `tsc`). Root `cache: 'npm'` points at an empty root lockfile — caching is ineffective / brittle.
+There is no lint or type-check-only job beyond what `build` embeds (`client` build runs `tsc`).
 
 ### Not present
 
@@ -365,4 +375,3 @@ No test, lint, or type-check-only job beyond what `build` embeds (`client` build
 - Logging/metrics/APM
 - Staging environment definitions
 - Database / Redis / pub-sub for multi-instance Socket.IO
-

@@ -236,8 +236,9 @@
 
 .spellcaster-keyboard .hg-button {
   @apply bg-slate-800/80 border border-slate-700 text-slate-100 font-semibold;
-  min-width: 36px;
-  min-height: 42px;
+  min-width: 0;
+  min-height: clamp(32px, 7vw, 42px);
+  font-size: clamp(0.7rem, 2.5vw, 1rem);
   box-shadow: none;
   text-transform: uppercase;
 }

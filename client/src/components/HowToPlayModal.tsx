@@ -20,12 +20,29 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
           </p>
         </section>
 
+        <section>
+          <h3 className="text-lg font-semibold text-emerald-200">Scoring</h3>
+          <p className="text-sm text-slate-300">
+            Accuracy earns up to 120 points. Cast with at least 30% accuracy to qualify for up to
+            20 Typing speed bonus points—the faster the cast, the larger the bonus. Your round
+            total pushes the beam.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-semibold text-emerald-200">Round Flow</h3>
+          <p className="text-sm text-slate-300">
+            After the three-second countdown, you have ten seconds to listen, type, and cast.
+            Round results remain for five seconds, or both players can skip to the next spell.
+          </p>
+        </section>
 
         <section>
           <h3 className="text-lg font-semibold text-emerald-200">Winning</h3>
           <p className="text-sm text-slate-300">
             Every accurate letter nudges your beam toward your opponent. Reach their sigil first to
-            win the duel!
+            win immediately, or lead on points after the final round. Leaving or disconnecting
+            during a duel forfeits the match.
           </p>
         </section>
       </div>
@@ -34,4 +51,3 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
 };
 
 export default HowToPlayModal;
-
