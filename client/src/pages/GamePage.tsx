@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import Logo from '../components/Logo';
 import { RoundRecapCard } from '../components/RoundRecapCard';
 import { CountdownDisplay } from '../components/CountdownDisplay';
@@ -5,6 +6,7 @@ import { OnScreenKeyboard } from '../components/OnScreenKeyboard';
 import { WizardBeam } from '../components/WizardBeam';
 import { SpellTimerRing } from '../components/SpellTimerRing';
 import { usePromptTimer } from '../hooks/usePromptTimer';
+import { blockSpellInputPaste, SPELL_PASTE_BLOCKED_MESSAGE } from '../lib/spellInputPaste';
 import type { DuelFinisherPayload, DuelState, Player, CountdownPayload, SpellPromptPayload, RecapSkipStatePayload, RoundRecapPayload } from '../../../shared/types/socket';
 
 interface GamePageProps {
@@ -52,10 +54,31 @@ const GamePage: React.FC<GamePageProps> = ({
   inputRef,
   onLeaveDuel,
 }) => {
+  const [showPasteBlockedMessage, setShowPasteBlockedMessage] = useState(false);
+  const pasteMessageTimeoutRef = useRef<number | null>(null);
   const currentRoundNumber = countdown?.roundNumber ?? prompt?.roundNumber ?? roundRecap?.roundNumber ?? duel.round ?? 1;
   const totalRounds = duel.totalRounds;
   const timer = usePromptTimer(prompt);
   const isTerminalRecap = Boolean(roundRecap && (roundRecap.roundNumber >= totalRounds || Math.abs(roundRecap.beamOffset) >= 100));
+
+  useEffect(() => () => {
+    if (pasteMessageTimeoutRef.current !== null) {
+      window.clearTimeout(pasteMessageTimeoutRef.current);
+    }
+  }, []);
+
+  const handleSpellPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    blockSpellInputPaste(event);
+    setShowPasteBlockedMessage(true);
+
+    if (pasteMessageTimeoutRef.current !== null) {
+      window.clearTimeout(pasteMessageTimeoutRef.current);
+    }
+    pasteMessageTimeoutRef.current = window.setTimeout(() => {
+      setShowPasteBlockedMessage(false);
+      pasteMessageTimeoutRef.current = null;
+    }, 1600);
+  };
 
   const renderCastingPanel = () => (
     <div className="card-glow mx-auto flex min-h-[280px] w-full max-w-2xl flex-col justify-center space-y-3 rounded-[28px] border border-white/10 bg-white/5 p-3 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl sm:p-4">
@@ -93,6 +116,7 @@ const GamePage: React.FC<GamePageProps> = ({
         value={currentGuess}
         onChange={onGuessChange}
         onKeyDown={onKeyDown}
+        onPaste={handleSpellPaste}
         className="sr-only-input"
         autoFocus
         autoComplete="off"
@@ -135,6 +159,11 @@ const GamePage: React.FC<GamePageProps> = ({
           <span className="inline-flex items-center gap-1 rounded-md border border-slate-600/40 bg-slate-800/60 px-2 py-1 font-mono text-[10px] uppercase">
             enter
           </span>
+          {showPasteBlockedMessage && (
+            <span className="text-[10px] text-rose-200" role="status" aria-live="polite">
+              {SPELL_PASTE_BLOCKED_MESSAGE}
+            </span>
+          )}
         </div>
       </div>
     </div>

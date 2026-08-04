@@ -1,7 +1,7 @@
 # Scoring and Duel UX Implementation Plan
 
-Status: **Implemented and verified; latest duel-layout refinement verified on 2026-08-01**  
-Baseline: `game/score-improvements` synchronized with `main` at `ed6dd59` on 2026-07-31  
+Status: **Implemented and verified; latest duel-layout refinement verified on 2026-08-04**
+Baseline: `game/score-improvements` synchronized with `main` at `ed6dd59` on 2026-07-31
 Related release work: C5, H3, H7, H8, M2, M8 in `docs/RELEASE_PLAN.md`
 
 This document is a handoff plan for implementing the approved scoring, recap, timer, score-display, and end-of-duel presentation changes. It is intentionally explicit about server authority and the recently fixed beam contract.
@@ -192,7 +192,7 @@ Files:
 #### Persistent score indicator
 
 - `useLobby` already maintains `scores`; destructure it in `App` and pass it to `GamePage`.
-- Show both player names and cumulative totals in a small, stable scoreboard in the unused upper portion of the wizard/beam arena, with each name/score pair centered in its equal-width player half.
+- Show cumulative totals as lightweight floating labels directly above their matching wizard sprites with no opaque containing bar; keep player names beneath the sprites for immediate character association.
 - Keep lobby/server player order so left/right score placement matches the wizards and signed beam offset.
 - Update only from server events. Never optimistically change a score on submission.
 - Position the indicator independently from the wizard/beam geometry so it does not move wand tips, overlap the beam, or materially change the beam layout.

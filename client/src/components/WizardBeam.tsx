@@ -363,20 +363,28 @@ export function WizardBeam({ players, scores, beamOffset = 0, roundRecap, localP
 
   const leftColor = leftWizardData?.color ?? '#ffffff';
   const rightColor = rightWizardData?.color ?? '#ffffff';
+  const scoreColors: Record<string, string> = {};
+  if (leftWizard) scoreColors[leftWizard.id] = leftColor;
+  if (rightWizard) scoreColors[rightWizard.id] = rightColor;
 
   return (
     <div 
       ref={containerRef}
       className="card-glow rounded-[28px] border border-white/10 bg-white/5 p-4 shadow-[0_30px_50px_rgba(4,0,23,0.7)] backdrop-blur-2xl sm:p-6"
     >
-      <div className="relative flex h-64 items-end justify-between px-2 pt-16 sm:px-4">
-        <div className="absolute inset-x-3 top-0 z-50 sm:inset-x-12">
-          <DuelScoreIndicator players={players} scores={scores} localPlayerId={localPlayerId ?? null} />
+      <div className="relative flex h-60 items-end justify-between px-2 pt-16 sm:px-4">
+        <div className="absolute inset-x-2 top-2 z-50 sm:inset-x-4 sm:top-3">
+          <DuelScoreIndicator
+            players={players}
+            scores={scores}
+            localPlayerId={localPlayerId ?? null}
+            playerColors={scoreColors}
+          />
         </div>
 
         {/* Left Wizard */}
         {leftWizard && leftWizardData && (
-          <div className="flex flex-col items-center gap-2" style={{ zIndex: 5, position: 'relative' }}>
+          <div className="flex w-24 flex-col items-center gap-2 sm:w-28" style={{ zIndex: 5, position: 'relative' }}>
             <div
               className="relative"
               style={{ 
@@ -404,20 +412,21 @@ export function WizardBeam({ players, scores, beamOffset = 0, roundRecap, localP
                 />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-incantation text-white">
-                {leftWizard.name}
-                {leftWizard.id === localPlayerId && (
-                  <span className="text-xs text-emerald-300 ml-1">(you)</span>
-                )}
-              </p>
-            </div>
+            <p
+              className="w-full truncate text-center text-xs font-incantation text-white sm:text-sm"
+              title={`${leftWizard.name}${leftWizard.id === localPlayerId ? ' (you)' : ''}`}
+            >
+              {leftWizard.name}
+              {leftWizard.id === localPlayerId && (
+                <span className="ml-1 text-xs text-emerald-300">(you)</span>
+              )}
+            </p>
           </div>
         )}
 
         {/* Right Wizard (Mirrored) */}
         {rightWizard && rightWizardData && (
-          <div className="flex flex-col items-center gap-2" style={{ zIndex: 5, position: 'relative', isolation: 'auto' }}>
+          <div className="flex w-24 flex-col items-center gap-2 sm:w-28" style={{ zIndex: 5, position: 'relative', isolation: 'auto' }}>
             <div
               className="relative"
               style={{ 
@@ -445,14 +454,15 @@ export function WizardBeam({ players, scores, beamOffset = 0, roundRecap, localP
                 />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-incantation text-white">
-                {rightWizard.name}
-                {rightWizard.id === localPlayerId && (
-                  <span className="text-xs text-emerald-300 ml-1">(you)</span>
-                )}
-              </p>
-            </div>
+            <p
+              className="w-full truncate text-center text-xs font-incantation text-white sm:text-sm"
+              title={`${rightWizard.name}${rightWizard.id === localPlayerId ? ' (you)' : ''}`}
+            >
+              {rightWizard.name}
+              {rightWizard.id === localPlayerId && (
+                <span className="ml-1 text-xs text-emerald-300">(you)</span>
+              )}
+            </p>
           </div>
         )}
 

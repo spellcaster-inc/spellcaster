@@ -1,6 +1,6 @@
 # Spellcaster Production Readiness
 
-Original audit date: **2026-07-16**. Last implementation verification: **2026-08-01**. Findings distinguish **confirmed** (code-traced) from **likely** (plausible race/UX/environment issues).
+Original audit date: **2026-07-16**. Last implementation verification: **2026-08-04**. Findings distinguish **confirmed** (code-traced) from **likely** (plausible race/UX/environment issues).
 
 ## 1. Tooling check results (exact)
 
@@ -13,7 +13,7 @@ Commands run from the repo on 2026-07-16:
 | Client build | `cd client && npm run build` | **PASS** (exit 0); Vite built successfully. Warnings: outdated `baseline-browser-mapping` / `caniuse-lite` browserslist data |
 | Server build | `cd server && npm run build` | **PASS** (exit 0) |
 | Lint | — | **N/A** — no ESLint/Prettier config or npm lint scripts |
-| Unit tests | `cd client && npm test`; `cd server && npm test` | **PASS** — client 16 tests; server 37 tests (scoring threshold, scoring→beam, recap/finisher flow, recap readiness display, beam geometry/filter bounds) |
+| Unit tests | `cd client && npm test`; `cd server && npm test` | **PASS** — client 19 tests; server 37 tests (scoring threshold, scoring→beam, recap/finisher flow, recap/score presentation, spell-input paste handling, beam geometry/filter bounds) |
 | Root install | — | **N/A** — no root `package.json` |
 
 CI runs client/server tests and builds on pushes and pull requests. Not re-run against GitHub Actions in this audit.

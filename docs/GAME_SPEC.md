@@ -37,10 +37,11 @@ There is no account system, persistence, matchmaking queue, or spectator mode.
 | Countdown (3s) | Confirmed | Server timer + client display |
 | Spell prompt | Confirmed | Catalog MP3 or custom TTS |
 | Typing + Cast Spell | Confirmed | Hidden input + visual keyboard highlight |
+| Spell-input clipboard paste | Disabled | The live answer field rejects paste and briefly asks the player to type the spell; other inputs still allow paste |
 | On-screen keyboard input | Incomplete | Visual only (`pointer-events-none`) |
 | 10s round timeout + timer ring | Confirmed | Small client display mirrors the server window; timeout creates an empty auto-submission |
 | Opponent submitted indicator | Confirmed | Via `duel:playerSubmitted` |
-| Cumulative score indicator | Confirmed | Server-owned totals remain visible in lobby player order at the top of the wizard/beam arena |
+| Cumulative score indicator | Confirmed | Server-owned totals float directly above their matching wizard sprites in lobby player order; player names remain beneath the sprites, and wizard colors appear only as subtle score accents |
 | Round recap | Confirmed | Compact spell/winner/player-guess/round-score view; five-second server window |
 | Mutual recap skip | Confirmed | Both players must select **Skip to next spell** to advance early; a plain inline `0/2`–`2/2` counter shows readiness |
 | Beam visualization | Confirmed | Driven by server `beamOffset` |
@@ -75,6 +76,7 @@ There is no account system, persistence, matchmaking queue, or spectator mode.
 - Catalog prompts omit `spellText` (**Confirmed**)
 - Server grades against internal spell text (**Confirmed**)
 - Server ignores client `durationMs` and computes its own (**Confirmed**)
+- Live spell-answer input blocks clipboard paste because manual typing is part of scoring (**Confirmed**)
 - Prompt MP3s remain public static files (**Confirmed limitation**)
 
 ## 3. Complete player journey
