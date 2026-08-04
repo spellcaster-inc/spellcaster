@@ -1,6 +1,6 @@
 # Spellcaster Production Readiness
 
-Audit date: **2026-07-16**. No application-code fixes were applied during this phase. Findings distinguish **confirmed** (code-traced) from **likely** (plausible race/UX/environment issues).
+Original audit date: **2026-07-16**. Last implementation verification: **2026-08-04**. Findings distinguish **confirmed** (code-traced) from **likely** (plausible race/UX/environment issues).
 
 ## 1. Tooling check results (exact)
 
@@ -13,7 +13,7 @@ Commands run from the repo on 2026-07-16:
 | Client build | `cd client && npm run build` | **PASS** (exit 0); Vite built successfully. Warnings: outdated `baseline-browser-mapping` / `caniuse-lite` browserslist data |
 | Server build | `cd server && npm run build` | **PASS** (exit 0) |
 | Lint | — | **N/A** — no ESLint/Prettier config or npm lint scripts |
-| Unit tests | `cd client && npm test`; `cd server && npm test` | Beam normalization and collision geometry regression coverage added (2026-07) |
+| Unit tests | `cd client && npm test`; `cd server && npm test` | **PASS** — client 19 tests; server 37 tests (scoring threshold, scoring→beam, recap/finisher flow, recap/score presentation, spell-input paste handling, beam geometry/filter bounds) |
 | Root install | — | **N/A** — no root `package.json` |
 
 CI runs client/server tests and builds on pushes and pull requests. Not re-run against GitHub Actions in this audit.
@@ -26,9 +26,9 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 | B2 | **Host create forces game screen before lobby exists** | **Fixed (2026-07).** Host stays on Landing with Host Settings modal **Creating…** until `lobby:state`; EntryPage deleted. |
 | B3 | **No reconnect / seat reclaim** | Disconnect → `leaveCurrentLobby` (forfeit if in duel). New `socket.id` cannot reclaim player slot. Client clears `socketId` on disconnect → `localPlayer` null. |
 | B4 | **Room code normalize inconsistency** | `lobby:join` / `duel:submitSpell` normalize codes; `lobby:setReady`, `lobby:updateSettings`, `lobby:startDuel` look up raw `roomCode`. Lowercase codes can fail those ops. |
-| B5 | **Speed bonus ignores accuracy** | `computeRoundScore` always adds `computeSpeedBonus(durationMs)` (`scoring.ts`). Instant wrong/empty guess still earns up to +20. |
+| B5 | **Fixed (2026-07): Speed bonus qualification** | Existing time curve is awarded only at `accuracy >= 0.30`; lower-accuracy guesses receive zero bonus. Exact boundary, empty/wrong, timeout, and beam integration are tested. |
 | B6 | **CSV upload errors always show “Not a .csv!”** | `GameSettingsControls` ignores actual `uploadError` string for display. |
-| B7 | **Invalid Tailwind class `scale-85`** | `GamePage.tsx` — not in default Tailwind scale scale; keyboard scale has no effect. |
+| B7 | **Fixed (2026-08): Invalid Tailwind class `scale-85`** | Removed the ineffective transform; keyboard sizing is now responsive through its actual key styles. |
 | B8 | **`showResultsPending` nearly dead** | Requires `!prompt`, but prompt remains while waiting for opponent; “Adjudicating…” rarely appears. |
 | B9 | **Tie / non-winner always plays loss SFX + Defeat UI** | `winnerId !== localPlayer.id` → loss path; no Draw. Score ties still pick a winner via stable sort. |
 | B10 | **Catalog `readingSpeed` unused for MP3 playback rate** | Only browser TTS applies rate (`useSpellAudio.ts`). Setting is misleading for easy/medium/hard. |
@@ -56,7 +56,7 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 | High | No rate limiting on socket events — DoS / lobby spam |
 | Medium | Custom prompts send plaintext answers (needed for TTS; cheat-friendly) |
 | Medium | Public catalog MP3s can be scraped and mapped offline |
-| Medium | Speed-bonus exploit (B5) affects competitive integrity |
+| Medium | **Fixed (2026-07):** sub-30% guesses no longer qualify for speed points |
 | Medium | `wizardId` / some booleans unsanitized — reflected to peers |
 | Low | CORS defaults to localhost; mis-set `CLIENT_ORIGIN` breaks or over-allows |
 | Low | Verbose submission logging may leak guesses into server logs |
@@ -87,10 +87,10 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 | Observation | Impact |
 |-------------|--------|
 | Landing/settings use `sm`/`md` breakpoints | Generally usable |
-| Game center fixed `h-[280px]` | Tight on short phones with beam + keyboard |
+| Content-driven game stage | Casting and recap panels grow to contain their controls; narrow layouts stack recap player cards and compress keyboard keys |
 | On-screen keyboard non-interactive | Mobile must use OS keyboard |
 | Hidden input + `autoCapitalize="characters"` | Helpful for mobile typing |
-| Summary table scroll `max-h-72` | OK but dense on small screens |
+| Expandable summary history | Collapsed rows reduce density; full two-player breakdown remains available by touch/click/keyboard |
 | Touch targets on landing generally large | OK |
 
 Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay policies — browsers often require a prior user gesture; host/join clicks may satisfy).
@@ -98,11 +98,11 @@ Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay
 ## 8. Accessibility concerns
 
 - Decorative particles / heavy color contrast not audited with tooling
-- Countdown and prompt changes may lack polite live-region announcements
+- Timer ring exposes timer semantics and a polite final-three-second update; broader live-region behavior still needs an accessibility pass
 - Modal focus trap not verified beyond Escape/backdrop close
 - Victory/Defeat is color + text; icons alone not required
 - On-screen keyboard is visual-only — confusing for AT users expecting buttons
-- No reduced-motion preferences for beam/hop animations
+- Terminal beam finisher respects reduced motion; existing hop/ambient animation coverage still needs a full pass
 - Font loading from Google Fonts CDN — privacy/reliability consideration
 
 ## 9. Deployment blockers
@@ -122,7 +122,7 @@ Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay
 
 | Area | Status |
 |------|--------|
-| Unit tests | Beam math/geometry covered; scoring, sanitize, and queue coverage still missing |
+| Unit tests | Beam math/geometry, scoring threshold, scoring→beam integration, prompt timer math, finisher math, recap skip/finalization covered; sanitize and queue coverage still missing |
 | Socket integration tests | Missing |
 | E2E duel happy path | Missing |
 | Load / soak tests | Missing |
@@ -137,7 +137,7 @@ Not device-lab tested in this audit (**Uncertain** for iOS Safari audio autoplay
 ## 11. Incomplete product surfaces (release risk)
 
 - Mid-lobby settings UI absent despite server support
-- How to Play under-explains scoring, timeouts, forfeit
+- How to Play now covers scoring qualification, timing, recap skip, beam/round wins, and forfeits
 - Empty `easy 2` / `medium 2` audio directories clutter public assets
 
 ## 12. What looks healthy

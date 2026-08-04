@@ -23,6 +23,9 @@ const App: React.FC = () => {
     prompt,
     roundRecap,
     summary,
+    scores,
+    finisher,
+    recapSkipState,
     roundSubmissions,
     error,
     localPlayer,
@@ -34,6 +37,7 @@ const App: React.FC = () => {
     setReady,
     startDuel,
     submitSpell,
+    skipRecap,
     clearError,
     resetSummary,
   } = useLobby();
@@ -195,6 +199,9 @@ const App: React.FC = () => {
           countdownValue={countdownValue}
           prompt={prompt}
           roundRecap={roundRecap}
+          scores={scores}
+          finisher={finisher}
+          recapSkipState={recapSkipState}
           currentGuess={currentGuess}
           hasSubmitted={hasSubmitted}
           opponentSubmitted={opponentSubmitted ?? false}
@@ -202,6 +209,7 @@ const App: React.FC = () => {
           showResultsPending={showResultsPending}
           onGuessChange={handleGuessChange}
           onSubmitSpell={handleSubmitSpell}
+          onSkipRecap={skipRecap}
           onKeyDown={(event) => {
             if (!prompt) {
               return;

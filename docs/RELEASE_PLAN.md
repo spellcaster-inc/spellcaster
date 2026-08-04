@@ -2,6 +2,8 @@
 
 Prioritized work to take Spellcaster from “playable prototype” to a shippable production release. Agents and contributors **must consult this plan before making changes** and update task status + docs when behavior changes.
 
+Detailed approved implementation blueprint for scoring and duel-flow UX: [SCORING_DUEL_UX_IMPLEMENTATION_PLAN.md](SCORING_DUEL_UX_IMPLEMENTATION_PLAN.md).
+
 Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 ---
@@ -65,10 +67,10 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 | Field              | Value                                                                                                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | Not Started                                                                                                                                                         |
+| **Status**         | Complete                                                                                                                                                            |
 | **Why**            | Fast nonsense guesses still earn speed points; undermines fairness.                                                                                                 |
 | **Affected files** | `server/src/game/scoring.ts`, docs (`GAME_SPEC.md`), any client score copy                                                                                          |
-| **Acceptance**     | Speed bonus scales with accuracy (e.g. `bonus * accuracy` or zero below a threshold). Unit tests cover perfect/fast, wrong/fast, empty/timeout cases. Spec updated. |
+| **Acceptance**     | Existing speed curve remains unchanged for answers with **at least 30% accuracy**; answers below 30% receive zero speed bonus. Exactly 30% qualifies. Keep the **Typing speed** label. Unit tests cover the boundary, perfect/fast, wrong/fast, empty/timeout cases, and beam regression; spec updated. |
 
 
 ### C6 — Make beam position match cumulative score
@@ -79,7 +81,7 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Status**         | Complete                                                                                                                                                                                              |
 | **Why**            | Raw per-round movement and amplified client geometry could push the collision beyond a wizard, while the visual did not clearly represent the cumulative-score lead.                                |
 | **Affected files** | `server/src/game/duelManager.ts`, `client/src/components/WizardBeam.tsx`, shared socket types, beam tests and documentation                                                                           |
-| **Acceptance**     | Beam position is derived from the cumulative-score difference; a 280-point lead reaches ±100; both clients render one shared collision point that remains between the wand tips; PR CI tests the math. |
+| **Acceptance**     | Beam position is derived from the cumulative-score difference; a 280-point lead reaches ±100; both clients render one shared collision point that remains between the wand tips; glow filters render without rectangular top/bottom clipping; PR CI tests the math and SVG bounds. |
 
 
 ---
@@ -121,8 +123,8 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 | Field              | Value                                                                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | Not Started                                                                                                                       |
-| **Why**            | Scoring, sanitize, and queue logic have no safety net; regressions will ship silently.                                            |
+| **Status**         | In Progress                                                                                                                       |
+| **Why**            | Scoring and duel-flow tests are now present; sanitize, queue, and room-code coverage are still incomplete.                        |
 | **Affected files** | new test setup under `server/` (and optionally client), `scoring.ts`, sanitize helpers, `spells.ts`                               |
 | **Acceptance**     | CI runs tests; coverage includes Levenshtein/scoring, custom-word sanitize, spell queue length, and room-code normalize behavior. |
 
@@ -166,6 +168,28 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Acceptance**     | CI cache works for client/server (or cache disabled intentionally); optional lint job; builds remain green. |
 
 
+### H7 — Tighten round pacing and preserve full result detail
+
+
+| Field              | Value                                                                                                                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**         | Complete                                                                                                                                                                                                                      |
+| **Why**            | The answer window lacks a visible timer, live recaps are dense, and the fixed eight-second recap slows repeat play.                                                                                                           |
+| **Affected files** | shared socket types, `duelManager.ts`, socket handlers, `useLobby.ts`, `GamePage.tsx`, recap/summary components, timer and score components                                                                                  |
+| **Acceptance**     | Small ten-second answer ring; lightweight cumulative scores float above their matching wizard sprites without an opaque HUD container while player names remain below the sprites; the live answer field rejects clipboard paste while other inputs retain normal paste behavior; content-driven casting/recap stage contains every control; compact five-second recap retains both submitted guesses; both players can skip together with a plain inline readiness count; three-second countdown unchanged; full per-round details remain accessible in end-summary disclosure. |
+
+
+### H8 — Show the game-ending cast before summary
+
+
+| Field              | Value                                                                                                                                                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**         | Complete                                                                                                                                                                                                                                             |
+| **Why**            | Terminal recap and completion are emitted back-to-back, so clients clear the duel before the final cast and beam result can land visually.                                                                                                           |
+| **Affected files** | shared socket types, `duelManager.ts`, `useLobby.ts`, `GamePage.tsx`, `WizardBeam.tsx`, terminal-flow tests                                                                                                                                        |
+| **Acceptance**     | Server delays summary through a bounded finalization phase; real score-derived beam state renders first; a presentation-only winning sweep reaches the loser on non-tied rounds-complete wins; normal beam math/appearance/animation remain unchanged. |
+
+
 ---
 
 
@@ -192,10 +216,10 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 | Field              | Value                                                                            |
 | ------------------ | -------------------------------------------------------------------------------- |
-| **Status**         | Not Started                                                                      |
+| **Status**         | Complete                                                                         |
 | **Why**            | Players lack scoring, timeout, beam, and forfeit rules.                          |
 | **Affected files** | `HowToPlayModal.tsx`, possibly Lobby/Game copy                                   |
-| **Acceptance**     | Modal explains listen→type→score→beam win / rounds / forfeit; matches GAME_SPEC. |
+| **Acceptance**     | Modal explains listen→type→score→beam win / rounds / forfeit, including the inclusive 30% speed-bonus qualification rule; matches GAME_SPEC. |
 
 
 
@@ -384,10 +408,12 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 4. **C4** disconnect messaging
 5. **C3** deploy path + env examples
 6. **H3** tests (lock scoring/sanitize)
-7. **H2** payload validation
-8. **H5** / **H4** settings honesty
-9. **H1** reconnect design
-10. Medium polish (**M1–M8**), then Optional as capacity allows
+7. **H7** timer / score indicator / recap pacing and end-result disclosure
+8. **H8** terminal cast presentation
+9. **H2** payload validation
+10. **H5** / **H4** settings honesty
+11. **H1** reconnect design
+12. Medium polish (**M1–M8**), then Optional as capacity allows
 
 
 

@@ -246,6 +246,32 @@ export function registerSocketHandlers(
         }
       });
 
+      socket.on('duel:skipRecap', ({ roomCode, roundNumber }) => {
+        const code = normalizeRoomCode(roomCode || socket.data.roomCode || '');
+        if (!code) {
+          return sendError(socket, 'you are not in a duel');
+        }
+
+        const lobby = lobbies.get(code);
+        if (!lobby || lobby.phase !== 'in-duel') {
+          // Stale and post-duel recap votes are harmless.
+          return;
+        }
+
+        if (!lobby.players.some((player) => player.id === socket.id)) {
+          return sendError(socket, 'you are not part of this duel');
+        }
+
+        if (!Number.isInteger(roundNumber)) {
+          return;
+        }
+
+        const result = duelManager.handleRecapSkip(code, socket.id, roundNumber);
+        if (result) {
+          return sendError(socket, result);
+        }
+      });
+
       socket.on('disconnect', (reason) => {
         leaveCurrentLobby(socket, io, duelManager);
         console.log(`client disconnected: ${socket.id} (${reason})`);
