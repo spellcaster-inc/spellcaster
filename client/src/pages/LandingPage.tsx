@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Logo from '../components/Logo';
 import WizardAvatarSelectorModal from '../components/WizardAvatarSelectorModal';
 import HowToPlayModal from '../components/HowToPlayModal';
+import {
+  DEFAULT_PLAYER_CUSTOMIZATION,
+  loadPlayerCustomization,
+  savePlayerCustomization,
+} from '../lib/playerCustomization';
 import type { Wizard } from '../types/wizard';
 import wizardPurple from '../assets/spellcaster-wizards/wizard-purple.png';
 import wizardRed from '../assets/spellcaster-wizards/wizard-red.png';
@@ -63,12 +68,21 @@ type LandingPageProps = {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onHostGame, onJoinGame, serverError, onClearError }) => {
-  const [nickname, setNickname] = useState('WIZARD');
-  const [selectedWizardId, setSelectedWizardId] = useState(WIZARDS[0].id);
+  const [nickname, setNickname] = useState(() => loadPlayerCustomization().nickname);
+  const [selectedWizardId, setSelectedWizardId] = useState(() => {
+    const savedWizardId = loadPlayerCustomization().wizardId;
+    return WIZARDS.some((wizard) => wizard.id === savedWizardId)
+      ? savedWizardId
+      : DEFAULT_PLAYER_CUSTOMIZATION.wizardId;
+  });
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
   const [isWizardModalOpen, setIsWizardModalOpen] = useState(false);
   const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
+
+  useEffect(() => {
+    savePlayerCustomization({ nickname, wizardId: selectedWizardId });
+  }, [nickname, selectedWizardId]);
 
   const selectedWizard = useMemo(
     () => WIZARDS.find((wizard) => wizard.id === selectedWizardId) ?? WIZARDS[0],
@@ -276,4 +290,3 @@ const LandingPage: React.FC<LandingPageProps> = ({ onHostGame, onJoinGame, serve
 };
 
 export default LandingPage;
-

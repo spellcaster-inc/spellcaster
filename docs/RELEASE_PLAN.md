@@ -276,6 +276,18 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Acceptance**     | Product decision implemented: true draws **or** documented tie-break; SFX/UI match. |
 
 
+
+### M9 — Persist landing customization
+
+
+| Field              | Value                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Status**         | Complete                                                                                               |
+| **Why**            | Returning from a joined lobby resets the player’s nickname and selected wizard.                       |
+| **Affected files** | `client/src/pages/LandingPage.tsx`, `client/src/lib/playerCustomization.ts`, client tests, client docs |
+| **Acceptance**     | Nickname and wizard selection persist across Landing unmounts and browser reloads; join code remains transient. |
+
+
 ---
 
 
