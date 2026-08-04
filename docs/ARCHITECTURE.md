@@ -137,6 +137,8 @@ else                            → LandingPage
 
 Host create keeps Landing + `HostSettingsModal` open (**Creating…**) until a matching `lobby:createResult` (and/or `lobby:state`) arrives. Each create includes a client `requestId`; late results for cancelled/timed-out ids are ignored. A 10s client timeout calls `cancelPendingCreate` (leave + ignore bare `lobby:state` until the next create/join).
 
+Landing nickname and wizard selections are stored in browser `localStorage` under `spellcaster.playerCustomization`, so unmounting Landing after joining or leaving a lobby does not reset the player’s customization. Join codes and lobby state are not persisted.
+
 Overlays: `HostSettingsModal`, `GameSummaryCard`.
 
 ## 5. Socket.IO events and payloads

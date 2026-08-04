@@ -92,7 +92,7 @@ End
 
 ### Host path (Confirmed)
 
-1. Landing: nickname (max 12, uppercased), wizard, **Host Game**.
+1. Landing: nickname (max 12, uppercased), wizard, **Host Game**. Nickname and wizard selections persist in the browser when returning to Landing; join codes remain transient.
 2. Host Settings modal: difficulty / rounds / speed / optional CSV.
 3. Confirm → `lobby:create` with `requestId`; modal stays open with **Creating…** until matching `lobby:createResult` (or `lobby:state`). Timeout after 10s cancels that attempt.
 4. Lobby shows room code, players, settings summary, ready/start.
@@ -100,7 +100,7 @@ End
 
 ### Join path (Confirmed)
 
-1. Landing: nickname, 4+ character code, wizard, **Join Game**.
+1. Landing: nickname, 4+ character code, wizard, **Join Game**. The nickname and wizard selection use the same browser-persisted customization.
 2. Screen stays on landing until `lobby:state` or error.
 3. Same lobby/duel flow as host (cannot start; cannot change settings via UI).
 
