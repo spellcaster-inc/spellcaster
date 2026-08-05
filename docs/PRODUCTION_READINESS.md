@@ -25,7 +25,7 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 | B1 | **Post-duel EntryPage flash** | **Not confirmed visible.** Server emits `duel:completed` + `lobby:state` back-to-back; React batches → Lobby under summary in normal play. EntryPage removed from App (2026-07); remaining risk was theoretical only. |
 | B2 | **Host create forces game screen before lobby exists** | **Fixed (2026-07).** Host stays on Landing with Host Settings modal **Creating…** until `lobby:state`; EntryPage deleted. |
 | B3 | **No reconnect / seat reclaim** | Disconnect → `leaveCurrentLobby` (forfeit if in duel). New `socket.id` cannot reclaim player slot. Client clears `socketId` on disconnect → `localPlayer` null. |
-| B4 | **Room code normalize inconsistency** | `lobby:join` / `duel:submitSpell` normalize codes; `lobby:setReady`, `lobby:updateSettings`, `lobby:startDuel` look up raw `roomCode`. Lowercase codes can fail those ops. |
+| B4 | **Fixed (2026-08): Room code normalize inconsistency** | All lobby handlers normalize room codes before lookup. A socket-handler regression test covers lowercase/padded codes through settings, ready, and duel start. |
 | B5 | **Fixed (2026-07): Speed bonus qualification** | Existing time curve is awarded only at `accuracy >= 0.30`; lower-accuracy guesses receive zero bonus. Exact boundary, empty/wrong, timeout, and beam integration are tested. |
 | B6 | **CSV upload errors always show “Not a .csv!”** | `GameSettingsControls` ignores actual `uploadError` string for display. |
 | B7 | **Fixed (2026-08): Invalid Tailwind class `scale-85`** | Removed the ineffective transform; keyboard sizing is now responsive through its actual key styles. |

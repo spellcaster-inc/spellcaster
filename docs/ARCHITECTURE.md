@@ -322,7 +322,7 @@ Requires `ELEVENLABS_API_KEY`. Skips existing files. **Append-only** catalog rul
 | Rate limiting                   | None                                           |
 | Payload schema validation       | TS types only; runtime destructuring can throw |
 | `wizardId` validation           | Pass-through string                            |
-| Room-code normalize consistency | Some handlers use raw `roomCode`               |
+| Room-code normalize consistency | Fixed: all lobby handlers normalize before lookup |
 | Speed bonus qualification       | Fixed: guesses below 30% accuracy receive zero speed bonus |
 | Public MP3 scraping             | Determined users can map audio over time       |
 | Custom mode leak                | `spellText` intentionally sent for TTS         |
