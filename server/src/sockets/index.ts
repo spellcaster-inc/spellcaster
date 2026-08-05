@@ -139,7 +139,8 @@ export function registerSocketHandlers(
       });
 
       socket.on('lobby:setReady', ({ roomCode, ready }) => {
-        const lobby = lobbies.get(roomCode);
+        const code = normalizeRoomCode(roomCode);
+        const lobby = lobbies.get(code);
         if (!lobby) {
           return sendError(socket, 'lobby no longer exists');
         }
@@ -157,7 +158,8 @@ export function registerSocketHandlers(
       });
 
       socket.on('lobby:updateSettings', ({ roomCode, settings }) => {
-        const lobby = lobbies.get(roomCode);
+        const code = normalizeRoomCode(roomCode);
+        const lobby = lobbies.get(code);
         if (!lobby) {
           return sendError(socket, 'lobby no longer exists');
         }
@@ -177,7 +179,8 @@ export function registerSocketHandlers(
       });
 
       socket.on('lobby:startDuel', ({ roomCode }) => {
-        const lobby = lobbies.get(roomCode);
+        const code = normalizeRoomCode(roomCode);
+        const lobby = lobbies.get(code);
         if (!lobby) {
           return sendError(socket, 'lobby no longer exists');
         }
@@ -201,7 +204,7 @@ export function registerSocketHandlers(
           ready: false,
         }));
 
-        console.log(`lobby ${roomCode} started a duel`);
+        console.log(`lobby ${code} started a duel`);
         broadcastLobbyState(io, lobby);
         duelManager.startDuel(lobby);
       });

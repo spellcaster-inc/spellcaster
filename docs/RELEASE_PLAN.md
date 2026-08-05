@@ -28,7 +28,7 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 | Field              | Value                                                                                                                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**         | Not Started                                                                                                                                                                                |
+| **Status**         | Complete                                                                                                                                                                                   |
 | **Why**            | Ready/start/settings can fail if clients send non-normalized codes; join works, later ops do not.                                                                                          |
 | **Affected files** | `server/src/sockets/index.ts`                                                                                                                                                              |
 | **Acceptance**     | `setReady`, `updateSettings`, `startDuel`, and any new lobby ops use the same `normalizeRoomCode` path as join/submit; tests or manual checklist cover lowercase join codes through start. |
@@ -124,7 +124,7 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | Field              | Value                                                                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Status**         | In Progress                                                                                                                       |
-| **Why**            | Scoring and duel-flow tests are now present; sanitize, queue, and room-code coverage are still incomplete.                        |
+| **Why**            | Scoring, duel-flow, and room-code handler tests are now present; sanitize and queue coverage are still incomplete.                |
 | **Affected files** | new test setup under `server/` (and optionally client), `scoring.ts`, sanitize helpers, `spells.ts`                               |
 | **Acceptance**     | CI runs tests; coverage includes Levenshtein/scoring, custom-word sanitize, spell queue length, and room-code normalize behavior. |
 
