@@ -24,7 +24,7 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 |----|-----|----------|
 | B1 | **Post-duel EntryPage flash** | **Not confirmed visible.** Server emits `duel:completed` + `lobby:state` back-to-back; React batches → Lobby under summary in normal play. EntryPage removed from App (2026-07); remaining risk was theoretical only. |
 | B2 | **Host create forces game screen before lobby exists** | **Fixed (2026-07).** Host stays on Landing with Host Settings modal **Creating…** until `lobby:state`; EntryPage deleted. |
-| B3 | **No reconnect / seat reclaim** | Disconnect → `leaveCurrentLobby` (forfeit if in duel). New `socket.id` cannot reclaim player slot. Client clears `socketId` on disconnect → `localPlayer` null. |
+| B3 | **No automatic seat reclaim** | Disconnect removes the player from the lobby and forfeits an active duel. The client clears the old session and shows a connection notice on Landing. Once reconnected, the player can manually host or join. |
 | B4 | **Fixed (2026-08): Room code normalize inconsistency** | All lobby handlers normalize room codes before lookup. A socket-handler regression test covers lowercase/padded codes through settings, ready, and duel start. |
 | B5 | **Fixed (2026-07): Speed bonus qualification** | Existing time curve is awarded only at `accuracy >= 0.30`; lower-accuracy guesses receive zero bonus. Exact boundary, empty/wrong, timeout, and beam integration are tested. |
 | B6 | **CSV upload errors always show “Not a .csv!”** | `GameSettingsControls` ignores actual `uploadError` string for display. |
@@ -40,7 +40,7 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 | L1 | Round timeout overwrite race | After auto-submissions, a late real submit can overwrite without re-triggering `lockRound` if all slots were already filled by autos (`duelManager.ts`). Window is short (~1s recap delay). |
 | L2 | Abandoned 1-player lobbies accumulate | Empty lobbies delete; solo host who never leaves keeps a Map entry forever. Soft memory leak. |
 | L3 | **Fixed (2026-07):** Beam early-win winner by score not beam sign | Beam position is now derived directly from the cumulative-score difference, so its sign and the score leader cannot diverge. |
-| L4 | Landing Host/Join not gated on `connected` | Emits while disconnected; user may see no immediate feedback. |
+| L4 | **Fixed:** Landing requests while disconnected | Host confirmation is disabled while disconnected. Join shows inline feedback without sending a request. |
 | L5 | StrictMode double audio start in dev | Effect cleanup exists; brief double-speak/play possible in React 18 StrictMode. |
 | L6 | **Fixed (2026-07):** Beam visual clamp glitches at high offsets | Both beams now share one collision point clamped between the wand tips; the `×3.0` multiplier and asymmetric endpoint fallbacks were removed. |
 | L7 | Manifest miss under unusual `cwd` | `spellAudio.ts` `__dirname` fallbacks do not match `dist/server/src/game`; depends on `cwd` heuristics. |
@@ -68,7 +68,7 @@ CI runs client/server tests and builds on pushes and pull requests. Not re-run a
 - `ready` not coerced to boolean
 - No client retry/backoff messaging for connect failures beyond status string
 - Host settings modal lacks error banner if create fails after screen switch
-- No graceful “opponent disconnected” toast before summary (only forfeit summary)
+- A forfeit is explained directly under the Victory title in the summary.
 - Health check only — no readiness that verifies manifest loaded
 
 ## 6. Performance and scalability risks

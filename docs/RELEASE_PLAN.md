@@ -54,10 +54,10 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 | Field              | Value                                                                                                                                                                                                                                                                                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | Not Started                                                                                                                                                                                                                                                                                                                                       |
-| **Why**            | Disconnect silently forfeits and breaks `localPlayer`; players experience unexplained Defeat / dead Ready buttons.                                                                                                                                                                                                                                |
-| **Affected files** | `server/src/sockets/index.ts`, `server/src/game/duelManager.ts`, `client/src/hooks/useLobby.ts`, `client/src/App.tsx`, UI banners                                                                                                                                                                                                                 |
-| **Acceptance**     | At minimum: clear “Opponent left — you win by forfeit” / “You disconnected” messaging; lobby reconnect policy documented (either short grace reconnect **or** explicit “session ended, return to landing”). No silent `localPlayer === null` mid-lobby without recovery CTA. Full seamless mid-duel resume may be High (H1), not required for C4. |
+| **Status**         | Complete |
+| **Why**            | Losing connection could leave a stale lobby or duel on screen. The remaining player could see a generic victory explanation after a forfeit. |
+| **Affected files** | `client/src/hooks/useLobby.ts`, `client/src/App.tsx`, `ConnectionLostNotice.tsx`, `GameSummaryCard.tsx` |
+| **Acceptance**     | Losing connection in a lobby or duel returns the player to Landing with a dismissible notice that does not shift the layout. The remaining player sees an explicit forfeit message under Victory. After reconnecting, the departed player can host or manually join an available lobby. |
 
 
 
