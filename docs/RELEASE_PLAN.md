@@ -195,8 +195,8 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 |-------|-------|
 | **Status** | Complete |
 | **Why** | Player-reported delayed Mystara Radius prompt; a full catalog audit found seven clips with excessive leading or internal silence. This audio repair is being prioritized in response to that report. |
-| **Affected files** | Seven prompt MP3s, `server/scripts/auditSpellAudio.py`, `docs/AUDIO.md` |
-| **Acceptance** | All 246 catalog entries match the catalog order, exist, decode successfully, and have no leading silence over 0.5 s or internal/trailing silence over 0.75 s at -55 dB. Original speech is retained; audit is read-only and reproducible without ElevenLabs. |
+| **Affected files** | Seven prompt MP3s, `server/scripts/auditSpellAudio.py`, `server/scripts/generateSpellAudio.mjs`, `docs/AUDIO.md` |
+| **Acceptance** | All 246 catalog entries match the catalog order, exist, decode successfully, and have no leading silence over 0.5 s or internal/trailing silence over 0.75 s at -55 dB. The original speech is retained. The standalone audit is read-only and reproducible without ElevenLabs. The generator checks each new clip and warns with the spell name, filename, and detected issue. |
 
 ---
 

@@ -71,7 +71,8 @@ No lint script is configured yet. Do not claim lint passed unless you add and ru
 
 ### Regenerate spell audio (manual, not CI)
 
-Requires `ELEVENLABS_API_KEY` in `server/.env`. See `docs/AUDIO.md`.
+Requires `ELEVENLABS_API_KEY` in `server/.env`. Generating new clips also requires
+`python3` and `ffmpeg` on PATH for the audio audit. See `docs/AUDIO.md`.
 
 ## Do not modify carelessly
 

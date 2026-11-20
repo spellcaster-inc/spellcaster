@@ -55,7 +55,9 @@ Catalog prompt payloads do not include `spellText`.
 
 ## Regenerating Prompt Audio
 
-Prerequisite: set `ELEVENLABS_API_KEY` in `server/.env`.
+Set `ELEVENLABS_API_KEY` in `server/.env`. To generate new clips, install Python 3
+and FFmpeg and make sure `python3` and `ffmpeg` are on your PATH. The generator
+checks these tools before requesting its first new clip from ElevenLabs.
 
 Run:
 
@@ -71,6 +73,11 @@ The script:
 - Writes/updates MP3 files in `client/public/audio/spells`.
 - Writes/updates `server/data/spellAudioManifest.json`.
 - Skips files that already exist.
+- Runs the same decode and silence checks as the catalog audit on each new MP3.
+  If a clip needs review, the output shows the spell name, filename, and what
+  triggered the warning. The flagged file stays on disk and generation continues.
+  Listen to flagged clips before committing. Trim the silence or remove the MP3
+  and rerun the generator to replace it.
 
 Do not run this script in CI/deploy; use it when the spell catalog changes.
 
@@ -80,6 +87,12 @@ Run this read-only audit from the repository root with Python 3 and FFmpeg insta
 
 ```bash
 python3 server/scripts/auditSpellAudio.py
+```
+
+To recheck a single clip after editing it, pass `--clip` and the file path:
+
+```bash
+python3 server/scripts/auditSpellAudio.py --clip client/public/audio/spells/medium/m040.mp3
 ```
 
 It checks catalog/manifest order, missing or unmapped MP3s, full-file decoding,
