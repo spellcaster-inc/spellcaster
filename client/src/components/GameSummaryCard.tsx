@@ -13,6 +13,9 @@ export function GameSummaryCard({ summary, players, localPlayerId, onClose }: Ga
   const localPlayer = players.find((player) => player.id === localPlayerId);
   const localRole = localPlayer?.isHost ? 'defending' : 'challenging';
   const opponentRole = localRole === 'defending' ? 'challenging' : 'defending';
+  const victoryMessage = summary.reason === 'forfeit'
+    ? 'Your opponent left. You win by forfeit.'
+    : `You outspelled the ${opponentRole} wizard.`;
   const heroSummary = summary.players.find((player) => player.playerId === localPlayerId);
   const reasonLabelMap: Record<GameSummary['reason'], string> = {
     beam: 'Beam overwhelm',
@@ -48,7 +51,7 @@ export function GameSummaryCard({ summary, players, localPlayerId, onClose }: Ga
               {isDraw
                 ? 'The duel ends with both wizards evenly matched.'
                 : didWin
-                ? `You outspelled the ${opponentRole} wizard.`
+                ? victoryMessage
                 : `The ${opponentRole} wizard overwhelmed your aura.`}
             </p>
           </header>

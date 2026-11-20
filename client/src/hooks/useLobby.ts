@@ -28,6 +28,7 @@ interface UseLobbyResult {
   scores: Record<string, number>;
   roundSubmissions: { roundNumber: number; playerIds: Record<string, boolean> } | null;
   error: string | null;
+  connectionLoss: LobbyState['phase'] | null;
   localPlayer: Player | null;
   isCreatePending: boolean;
   createLobby: (playerName: string, settings?: GameSettings, wizardId?: string) => void;
@@ -39,6 +40,7 @@ interface UseLobbyResult {
   submitSpell: (guess: string, durationMs: number, promptId: string) => void;
   skipRecap: (roundNumber: number) => void;
   clearError: () => void;
+  dismissConnectionLoss: () => void;
   resetSummary: () => void;
 }
 
@@ -46,6 +48,7 @@ export function useLobby(): UseLobbyResult {
   const [lobby, setLobby] = useState<LobbyState | null>(null);
   const [duel, setDuel] = useState<DuelState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connectionLoss, setConnectionLoss] = useState<LobbyState['phase'] | null>(null);
   const [socketId, setSocketId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<CountdownPayload | null>(null);
   const [prompt, setPrompt] = useState<SpellPromptPayload | null>(null);
@@ -64,6 +67,28 @@ export function useLobby(): UseLobbyResult {
   const lastCreateRequestIdRef = useRef<string | null>(null);
   const cancelledCreateRequestIdRef = useRef<string | null>(null);
   const ignoreLobbyStateRef = useRef(false);
+  const lobbyPhaseRef = useRef<LobbyState['phase'] | null>(null);
+
+  const updateLobby = useCallback((state: LobbyState | null) => {
+    lobbyPhaseRef.current = state?.phase ?? null;
+    setLobby(state);
+    if (state) {
+      setConnectionLoss(null);
+    }
+  }, []);
+
+  const clearLocalLobbyState = useCallback(() => {
+    updateLobby(null);
+    setDuel(null);
+    setCountdown(null);
+    setPrompt(null);
+    setRoundRecap(null);
+    setSummary(null);
+    setFinisher(null);
+    setRecapSkipState(null);
+    setScores({});
+    setRoundSubmissions(null);
+  }, [updateLobby]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -72,7 +97,7 @@ export function useLobby(): UseLobbyResult {
       if (ignoreLobbyStateRef.current) {
         return;
       }
-      setLobby(state);
+      updateLobby(state);
       if (state.phase !== 'in-duel') {
         setDuel(null);
       }
@@ -100,7 +125,7 @@ export function useLobby(): UseLobbyResult {
         return;
       }
 
-      setLobby(payload.lobby);
+      updateLobby(payload.lobby);
       if (payload.lobby.phase !== 'in-duel') {
         setDuel(null);
       }
@@ -202,6 +227,10 @@ export function useLobby(): UseLobbyResult {
     };
 
     const handleCompleted = (payload: GameSummary) => {
+      // Completion arrives before the server broadcasts the return to the lobby.
+      if (lobbyPhaseRef.current === 'in-duel') {
+        lobbyPhaseRef.current = 'lobby';
+      }
       setSummary(payload);
       setCountdown(null);
       setPrompt(null);
@@ -233,6 +262,19 @@ export function useLobby(): UseLobbyResult {
 
     const handleDisconnect = () => {
       setSocketId(null);
+      const phase = lobbyPhaseRef.current;
+      const wasCreating = pendingCreateRequestIdRef.current !== null;
+      pendingCreateRequestIdRef.current = null;
+      lastCreateRequestIdRef.current = null;
+      ignoreLobbyStateRef.current = true;
+      setIsCreatePending(false);
+      clearLocalLobbyState();
+      if (phase) {
+        setError(null);
+        setConnectionLoss(phase);
+      } else if (wasCreating) {
+        setError('You lost connection. Try again when you reconnect.');
+      }
     };
 
     const handlePlayerSubmitted = (payload: PlayerSubmissionPayload) => {
@@ -289,7 +331,7 @@ export function useLobby(): UseLobbyResult {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
     };
-  }, []);
+  }, [clearLocalLobbyState, updateLobby]);
 
   const localPlayer = useMemo(() => {
     if (!socketId || !lobby) {
@@ -298,19 +340,6 @@ export function useLobby(): UseLobbyResult {
 
     return lobby.players.find((player) => player.id === socketId) ?? null;
   }, [socketId, lobby]);
-
-  const clearLocalLobbyState = useCallback(() => {
-    setLobby(null);
-    setDuel(null);
-    setCountdown(null);
-    setPrompt(null);
-    setRoundRecap(null);
-    setSummary(null);
-    setFinisher(null);
-    setRecapSkipState(null);
-    setScores({});
-    setRoundSubmissions(null);
-  }, []);
 
   const createLobby = useCallback((playerName: string, settings?: GameSettings, wizardId?: string) => {
     const name = playerName.trim();
@@ -351,11 +380,16 @@ export function useLobby(): UseLobbyResult {
       setError('enter both your name and a room code');
       return;
     }
+    const socket = getSocket();
+    if (!socket.connected) {
+      setError('Wait for your connection before joining.');
+      return;
+    }
     ignoreLobbyStateRef.current = false;
     pendingCreateRequestIdRef.current = null;
     setIsCreatePending(false);
     setError(null);
-    getSocket().emit('lobby:join', { roomCode: code, playerName: name, wizardId });
+    socket.emit('lobby:join', { roomCode: code, playerName: name, wizardId });
   }, []);
 
   const leaveLobby = useCallback(() => {
@@ -404,6 +438,7 @@ export function useLobby(): UseLobbyResult {
   }, [lobby]);
 
   const clearError = useCallback(() => setError(null), []);
+  const dismissConnectionLoss = useCallback(() => setConnectionLoss(null), []);
   const resetSummary = useCallback(() => setSummary(null), []);
 
   return {
@@ -418,6 +453,7 @@ export function useLobby(): UseLobbyResult {
     scores,
     roundSubmissions,
     error,
+    connectionLoss,
     localPlayer,
     isCreatePending,
     createLobby,
@@ -429,6 +465,7 @@ export function useLobby(): UseLobbyResult {
     submitSpell,
     skipRecap,
     clearError,
+    dismissConnectionLoss,
     resetSummary,
   };
 }

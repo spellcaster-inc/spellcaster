@@ -7,6 +7,7 @@ import { useLobby } from './hooks/useLobby';
 import { useCountdownTimer } from './hooks/useCountdownTimer';
 import { useSpellAudio } from './hooks/useSpellAudio';
 import { useSpellInput } from './hooks/useSpellInput';
+import { ConnectionLostNotice } from './components/ConnectionLostNotice';
 import { GameSummaryCard } from './components/GameSummaryCard';
 import { HostSettingsModal } from './components/HostSettingsModal';
 import type { GameSettings } from '../../shared/types/socket';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
     recapSkipState,
     roundSubmissions,
     error,
+    connectionLoss,
     localPlayer,
     isCreatePending,
     createLobby,
@@ -39,6 +41,7 @@ const App: React.FC = () => {
     submitSpell,
     skipRecap,
     clearError,
+    dismissConnectionLoss,
     resetSummary,
   } = useLobby();
 
@@ -94,6 +97,12 @@ const App: React.FC = () => {
       setHostSettingsModalOpen(false);
     }
   }, [hostSettingsModalOpen, lobby]);
+
+  useEffect(() => {
+    if (connectionLoss) {
+      setHostSettingsModalOpen(false);
+    }
+  }, [connectionLoss]);
 
   useEffect(() => {
     if (lobby && currentScreen === 'landing') {
@@ -255,6 +264,13 @@ const App: React.FC = () => {
   return (
     <>
       {renderMainScreen()}
+
+      {connectionLoss && (
+        <ConnectionLostNotice
+          wasInDuel={connectionLoss === 'in-duel'}
+          onDismiss={dismissConnectionLoss}
+        />
+      )}
 
       <HostSettingsModal
         open={hostSettingsModalOpen && !lobby}

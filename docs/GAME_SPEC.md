@@ -28,7 +28,7 @@ There is no account system, persistence, matchmaking queue, or spectator mode.
 | Host transfer on leave | Confirmed | Remaining player becomes host |
 | Wizard avatar selection | Confirmed | 6 avatars; id stored on player |
 | How to Play modal | Confirmed | Explains scoring, timing, recap skip, beam wins, rounds, and forfeits |
-| Connection status | Partial | Used to disable some buttons; no global reconnect UX |
+| Connection status | Confirmed | Losing an active lobby or duel connection returns the player to Landing with a dismissible notice |
 
 ### Duel
 
@@ -246,18 +246,18 @@ Client surfaces:
 
 - Landing join: inline error
 - Host settings modal: create errors + **Creating…** state; confirm disabled when disconnected / invalid custom / creating
-- Landing Host/Join: **not** disabled when disconnected (**Confirmed gap**)
+- Landing Join: shows an inline message if attempted while disconnected
 
 ## 10. Disconnections and reconnections
 
 | Situation | Behavior | Level |
 |-----------|----------|-------|
-| Disconnect in lobby | Removed from lobby; host reassigned if needed; ready flags cleared | Confirmed |
+| Disconnect in lobby | Departing player returns to Landing with a connection notice. The remaining player stays in the room and becomes host if needed. Ready flags are cleared. | Confirmed |
 | Last player leaves lobby | Lobby deleted | Confirmed |
-| Disconnect / leave in duel | Forfeit; remaining player wins; lobby reset to lobby phase | Confirmed |
+| Disconnect / leave in duel | The remaining player sees “Your opponent left. You win by forfeit.” in the result. A disconnected player returns to Landing with a connection notice. | Confirmed |
 | Socket auto-reconnect | Socket.IO client may reconnect with **new** `socket.id` | Confirmed |
 | Reclaim seat / resume duel | **Not implemented** | Confirmed |
-| Client `localPlayer` after reconnect | Cleared on disconnect; no rebind → Ready/You labels break | Confirmed |
+| Client after reconnect | The old session is cleared. The player can host or manually rejoin an available lobby. | Confirmed |
 
 ## 11. Incomplete, unused, or inconsistent features
 
