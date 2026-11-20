@@ -290,7 +290,9 @@ PUBLIC_AUDIO_BASE_PATH=/audio/spells \
 node scripts/generateSpellAudio.mjs
 ```
 
-Requires `ELEVENLABS_API_KEY`. Skips existing files. **Append-only** catalog rule preserves index→filename mapping.
+Requires `ELEVENLABS_API_KEY`. When generating new clips, it uses Python 3 and
+FFmpeg to check them for decoding errors and excessive silence. It skips existing
+files. The **append-only** catalog rule preserves index→filename mapping.
 
 ## 8. Security and anti-cheat
 

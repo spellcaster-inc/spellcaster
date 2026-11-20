@@ -90,8 +90,6 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 
 ## High
 
-
-
 ### H1 — Reconnect / resume design for lobby (and optional duel grace)
 
 
@@ -189,6 +187,16 @@ Status values: `Not Started` | `In Progress` | `Blocked` | `Complete`
 | **Affected files** | shared socket types, `duelManager.ts`, `useLobby.ts`, `GamePage.tsx`, `WizardBeam.tsx`, terminal-flow tests                                                                                                                                        |
 | **Acceptance**     | Server delays summary through a bounded finalization phase; real score-derived beam state renders first; a presentation-only winning sweep reaches the loser on non-tied rounds-complete wins; normal beam math/appearance/animation remain unchanged. |
 
+
+
+### H9 — Repair excessive silence in catalog prompts
+
+| Field | Value |
+|-------|-------|
+| **Status** | Complete |
+| **Why** | Player-reported delayed Mystara Radius prompt; a full catalog audit found seven clips with excessive leading or internal silence. This audio repair is being prioritized in response to that report. |
+| **Affected files** | Seven prompt MP3s, `server/scripts/auditSpellAudio.py`, `server/scripts/generateSpellAudio.mjs`, `docs/AUDIO.md` |
+| **Acceptance** | All 246 catalog entries match the catalog order, exist, decode successfully, and have no leading silence over 0.5 s or internal/trailing silence over 0.75 s at -55 dB. The original speech is retained. The standalone audit is read-only and reproducible without ElevenLabs. The generator checks each new clip and warns with the spell name, filename, and detected issue. |
 
 ---
 

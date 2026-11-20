@@ -55,7 +55,9 @@ Catalog prompt payloads do not include `spellText`.
 
 ## Regenerating Prompt Audio
 
-Prerequisite: set `ELEVENLABS_API_KEY` in `server/.env`.
+Set `ELEVENLABS_API_KEY` in `server/.env`. To generate new clips, install Python 3
+and FFmpeg and make sure `python3` and `ffmpeg` are on your PATH. The generator
+checks these tools before requesting its first new clip from ElevenLabs.
 
 Run:
 
@@ -71,8 +73,51 @@ The script:
 - Writes/updates MP3 files in `client/public/audio/spells`.
 - Writes/updates `server/data/spellAudioManifest.json`.
 - Skips files that already exist.
+- Runs the same decode and silence checks as the catalog audit on each new MP3.
+  If a clip needs review, the output shows the spell name, filename, and what
+  triggered the warning. The flagged file stays on disk and generation continues.
+  Listen to flagged clips before committing. Trim the silence or remove the MP3
+  and rerun the generator to replace it.
 
 Do not run this script in CI/deploy; use it when the spell catalog changes.
+
+## Checking Existing Clips
+
+Run this read-only audit from the repository root with Python 3 and FFmpeg installed:
+
+```bash
+python3 server/scripts/auditSpellAudio.py
+```
+
+To recheck a single clip after editing it, pass `--clip` and the file path:
+
+```bash
+python3 server/scripts/auditSpellAudio.py --clip client/public/audio/spells/medium/m040.mp3
+```
+
+It checks catalog/manifest order, missing or unmapped MP3s, full-file decoding,
+leading silence over 0.5 seconds, and internal/trailing silence over 0.75 seconds.
+Silence detection uses -55 dB with an 80 ms minimum interval. Short natural pauses
+are allowed. This is a signal/file check; it does not verify pronunciation or
+browser/network playback timing. It never calls ElevenLabs or edits assets.
+
+The catalog silence repair covers seven clips:
+
+| Clip | Spell | Repair |
+|------|-------|--------|
+| `medium/m040.mp3` | Mystara Radius | Remove 2.63 s of leading silence |
+| `medium/m041.mp3` | Arcadius Tempest | Remove 2.70 s of leading silence |
+| `hard/h073.mp3` | Sabriae Tyrannus | Remove 2.61 s of leading silence |
+| `medium/m010.mp3` | Raptorialis Ignis | Shorten a 0.88 s internal silence to 0.20 s |
+| `medium/m043.mp3` | Gladius Frigus | Shorten a 1.82 s internal silence to 0.20 s |
+| `hard/h036.mp3` | Sanguis Aeterlash | Shorten a 2.63 s silence after initial sound to 0.20 s |
+| `hard/h040.mp3` | Furiosa Malleus | Shorten a 2.70 s silence after initial sound to 0.20 s |
+
+The three leading repairs retain about 0.11 s before speech. Internal repairs
+retain 0.10 s of silence on each side of the cut and all surrounding audio.
+The seven repaired MP3s were compared against the retained original samples;
+correlation exceeded 0.9997 after MP3 encoding. All 246 catalog clips passed the
+audit after repair. The four SFX files also decoded successfully and were unchanged.
 
 ## Important Catalog Rule (Append Only)
 
